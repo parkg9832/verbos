@@ -16,3 +16,13 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## GitHub Pages
+
+`main` 브랜치에 푸시하면 GitHub Actions가 정적 사이트를 빌드해 GitHub Pages로 배포합니다.
+
+배포 주소:
+
+```text
+https://parkg9832.github.io/verbos/
+```
