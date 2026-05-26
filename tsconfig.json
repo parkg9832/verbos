@@ -31,6 +31,10 @@
     "app/**/*.tsx",
     "components/**/*.ts",
     "components/**/*.tsx",
+    "contexts/**/*.ts",
+    "contexts/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
     "lib/**/*.ts",
     "lib/**/*.tsx",
     ".next/types/**/*.ts"

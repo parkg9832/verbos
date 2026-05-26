@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { GoogleSyncControls } from "@/components/GoogleSyncControls";
+import { InteractiveTaskList } from "@/components/InteractiveTaskList";
+import { UnifiedCalendar } from "@/components/UnifiedCalendar";
+import { UnifiedTimeEntryForm } from "@/components/UnifiedTimeEntryForm";
 import { DetailView } from "@/components/layout/DetailView";
 import { ListView } from "@/components/layout/ListView";
 import { ProjectFormModal } from "@/components/layout/ProjectFormModal";
 import { RightWidget } from "@/components/layout/RightWidget";
 import { Sidebar, type SidebarSection } from "@/components/layout/Sidebar";
+import { TimeManagementProvider } from "@/contexts/TimeManagementContext";
 import {
   createEmptyProject,
   initialProjects,
@@ -16,6 +21,14 @@ import {
 const STORAGE_KEY = "verbos-crm-projects";
 
 export default function HomePage() {
+  return (
+    <TimeManagementProvider>
+      <HomePageContent />
+    </TimeManagementProvider>
+  );
+}
+
+function HomePageContent() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     initialProjects[0]?.id ?? null,
@@ -31,12 +44,10 @@ export default function HomePage() {
 
   useEffect(() => {
     const savedProjects = window.localStorage.getItem(STORAGE_KEY);
-
     if (!savedProjects) return;
 
     try {
       const parsedProjects = JSON.parse(savedProjects) as Project[];
-
       if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
         setProjects(parsedProjects);
         setSelectedProjectId(parsedProjects[0].id);
@@ -111,11 +122,7 @@ export default function HomePage() {
   function updateDraftField(field: keyof Project, value: string) {
     setDraftProject((current) => {
       if (!current) return current;
-
-      return {
-        ...current,
-        [field]: value,
-      };
+      return { ...current, [field]: value };
     });
   }
 
@@ -207,31 +214,57 @@ export default function HomePage() {
     );
   }
 
+  function renderActiveContent() {
+    if (activeSection === "할일관리") {
+      return (
+        <>
+          <TimeControlPanel projects={projects} />
+          <InteractiveTaskList projects={projects} />
+        </>
+      );
+    }
+
+    if (activeSection === "일정관리") {
+      return (
+        <>
+          <TimeControlPanel projects={projects} />
+          <UnifiedCalendar projects={projects} />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <ListView
+          projects={filteredProjects}
+          selectedProjectId={selectedProjectId}
+          activeSection={activeSection}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+          onSearchChange={setSearchQuery}
+          onStatusFilterChange={setStatusFilter}
+          onSelectProject={setSelectedProjectId}
+          onCreateProject={openAddModal}
+        />
+        <DetailView
+          project={selectedProject}
+          onEditProject={openEditModal}
+          onDeleteProject={deleteSelectedProject}
+          onAddTask={addTaskToSelectedProject}
+          onAddSchedule={addScheduleToSelectedProject}
+        />
+        <RightWidget selectedProject={selectedProject} />
+      </>
+    );
+  }
+
   return (
     <main className="flex min-h-screen min-w-[1180px] overflow-hidden bg-white text-slate-950">
       <Sidebar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
       />
-      <ListView
-        projects={filteredProjects}
-        selectedProjectId={selectedProjectId}
-        activeSection={activeSection}
-        searchQuery={searchQuery}
-        statusFilter={statusFilter}
-        onSearchChange={setSearchQuery}
-        onStatusFilterChange={setStatusFilter}
-        onSelectProject={setSelectedProjectId}
-        onCreateProject={openAddModal}
-      />
-      <DetailView
-        project={selectedProject}
-        onEditProject={openEditModal}
-        onDeleteProject={deleteSelectedProject}
-        onAddTask={addTaskToSelectedProject}
-        onAddSchedule={addScheduleToSelectedProject}
-      />
-      <RightWidget selectedProject={selectedProject} />
+      {renderActiveContent()}
 
       {modalMode && draftProject ? (
         <ProjectFormModal
@@ -244,5 +277,14 @@ export default function HomePage() {
         />
       ) : null}
     </main>
+  );
+}
+
+function TimeControlPanel({ projects }: { projects: Project[] }) {
+  return (
+    <aside className="flex h-screen w-[380px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-slate-200 bg-slate-50 px-4 py-4">
+      <UnifiedTimeEntryForm projects={projects} />
+      <GoogleSyncControls />
+    </aside>
   );
 }
