@@ -17,6 +17,36 @@ import {
 
 const STORAGE_KEY = "verbos-crm-projects";
 
+function normalizeProject(project: Partial<Project>, index: number): Project {
+  const fallback = initialProjects[index % initialProjects.length];
+
+  return {
+    ...fallback,
+    ...project,
+    id: typeof project.id === "string" ? project.id : fallback.id,
+    title: typeof project.title === "string" ? project.title : fallback.title,
+    status: project.status ?? fallback.status,
+    client: typeof project.client === "string" ? project.client : fallback.client,
+    assignee:
+      typeof project.assignee === "string" ? project.assignee : fallback.assignee,
+    dateRange:
+      typeof project.dateRange === "string" ? project.dateRange : fallback.dateRange,
+    category:
+      typeof project.category === "string" ? project.category : fallback.category,
+    priority: project.priority ?? fallback.priority,
+    contact:
+      typeof project.contact === "string" ? project.contact : fallback.contact,
+    budget: typeof project.budget === "string" ? project.budget : fallback.budget,
+    nextAction:
+      typeof project.nextAction === "string"
+        ? project.nextAction
+        : fallback.nextAction,
+    memo: typeof project.memo === "string" ? project.memo : fallback.memo,
+    tasks: Array.isArray(project.tasks) ? project.tasks : [],
+    schedule: Array.isArray(project.schedule) ? project.schedule : [],
+  };
+}
+
 export default function HomePage() {
   return (
     <TimeManagementProvider>
@@ -44,10 +74,11 @@ function HomePageContent() {
     if (!savedProjects) return;
 
     try {
-      const parsedProjects = JSON.parse(savedProjects) as Project[];
+      const parsedProjects = JSON.parse(savedProjects) as Partial<Project>[];
       if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
-        setProjects(parsedProjects);
-        setSelectedProjectId(parsedProjects[0].id);
+        const nextProjects = parsedProjects.map(normalizeProject);
+        setProjects(nextProjects);
+        setSelectedProjectId(nextProjects[0].id);
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
