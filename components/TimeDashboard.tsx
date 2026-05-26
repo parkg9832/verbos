@@ -53,7 +53,7 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
     );
   }
 
-  function openDate(date: string) {
+  function openModal(date: string) {
     setSelectedDate(date);
     setIsModalOpen(true);
   }
@@ -113,11 +113,10 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
               const isSelected = selectedDate === date;
 
               return (
-                <button
+                <div
                   key={date}
-                  type="button"
-                  onClick={() => openDate(date)}
-                  className={`relative min-h-32 overflow-hidden rounded-lg border p-2 text-left transition-colors duration-200 ${
+                  onClick={() => setSelectedDate(date)}
+                  className={`group relative min-h-32 overflow-hidden rounded-lg border p-2 text-left transition-colors duration-200 ${
                     isSelected
                       ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
                       : "border-slate-200 bg-slate-50 hover:border-teal-200 hover:bg-white"
@@ -126,28 +125,41 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
                   <span className="absolute left-2 top-2 z-10 text-xs font-semibold text-slate-700">
                     {day}
                   </span>
-                  {dayTasks.length > 0 ? (
-                    <span className="absolute right-2 top-2 z-10 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                      할일 {dayTasks.length}
-                    </span>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openModal(date);
+                    }}
+                    className="absolute right-2 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded text-sm font-semibold text-slate-500 transition-colors duration-200 hover:bg-gray-100 hover:text-slate-900 group-hover:flex"
+                    aria-label={`${date} 입력 추가`}
+                  >
+                    +
+                  </button>
 
-                  <div className="space-y-1 pt-8">
+                  <div className="flex flex-col gap-1.5 pt-8">
                     {daySchedules.slice(0, 2).map((event) => (
                       <div
                         key={event.id}
-                        className="truncate rounded-md bg-teal-600 px-2 py-1 text-[11px] font-semibold text-white"
+                        className="flex items-center justify-between gap-1 text-[11px] text-gray-700"
                       >
-                        {event.startTime} {event.title}
+                        <span className="min-w-0 truncate">{event.title}</span>
+                        <span className="ml-1 shrink-0 font-medium">
+                          ({event.startTime})
+                        </span>
                       </div>
                     ))}
                     {dayTasks.slice(0, 2).map((task) => (
                       <div
                         key={task.id}
-                        className="flex items-center gap-1 truncate text-[11px] text-slate-600"
+                        className="flex items-center gap-1 text-[11px] text-slate-600"
                       >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                        <span className={task.completed ? "line-through" : ""}>
+                        <span
+                          className={`min-w-0 truncate ${
+                            task.completed ? "line-through" : ""
+                          }`}
+                        >
                           {task.title}
                         </span>
                       </div>
@@ -158,7 +170,7 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
                       </p>
                     ) : null}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
