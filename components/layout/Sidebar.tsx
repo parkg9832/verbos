@@ -1,7 +1,6 @@
 import {
   BriefcaseBusiness,
   CalendarDays,
-  CheckSquare,
   ChevronLeft,
   FolderKanban,
   LayoutDashboard,
@@ -15,8 +14,7 @@ export type SidebarSection =
   | "리드관리"
   | "고객관리"
   | "프로젝트관리"
-  | "할일관리"
-  | "일정관리"
+  | "일정 및 할일"
   | "메시지"
   | "환경설정";
 
@@ -36,8 +34,7 @@ const menuGroups: Array<{
   {
     label: "실행",
     items: [
-      { name: "할일관리", icon: CheckSquare },
-      { name: "일정관리", icon: CalendarDays },
+      { name: "일정 및 할일", icon: CalendarDays },
       { name: "메시지", icon: MessageSquareText },
       { name: "환경설정", icon: Settings },
     ],

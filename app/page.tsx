@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { GoogleSyncControls } from "@/components/GoogleSyncControls";
-import { InteractiveTaskList } from "@/components/InteractiveTaskList";
-import { UnifiedCalendar } from "@/components/UnifiedCalendar";
-import { UnifiedTimeEntryForm } from "@/components/UnifiedTimeEntryForm";
+import { TimeDashboard } from "@/components/TimeDashboard";
 import { DetailView } from "@/components/layout/DetailView";
 import { ListView } from "@/components/layout/ListView";
 import { ProjectFormModal } from "@/components/layout/ProjectFormModal";
@@ -215,22 +212,8 @@ function HomePageContent() {
   }
 
   function renderActiveContent() {
-    if (activeSection === "할일관리") {
-      return (
-        <>
-          <TimeControlPanel projects={projects} />
-          <InteractiveTaskList projects={projects} />
-        </>
-      );
-    }
-
-    if (activeSection === "일정관리") {
-      return (
-        <>
-          <TimeControlPanel projects={projects} />
-          <UnifiedCalendar projects={projects} />
-        </>
-      );
+    if (activeSection === "일정 및 할일") {
+      return <TimeDashboard projects={projects} />;
     }
 
     return (
@@ -259,7 +242,7 @@ function HomePageContent() {
   }
 
   return (
-    <main className="flex min-h-screen min-w-[1180px] overflow-hidden bg-white text-slate-950">
+    <main className="flex min-h-screen overflow-hidden bg-white text-slate-950">
       <Sidebar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
@@ -277,14 +260,5 @@ function HomePageContent() {
         />
       ) : null}
     </main>
-  );
-}
-
-function TimeControlPanel({ projects }: { projects: Project[] }) {
-  return (
-    <aside className="flex h-screen w-[380px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-slate-200 bg-slate-50 px-4 py-4">
-      <UnifiedTimeEntryForm projects={projects} />
-      <GoogleSyncControls />
-    </aside>
   );
 }
