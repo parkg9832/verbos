@@ -1,4 +1,15 @@
-export type ProjectStatus = "진행중" | "진행예정" | "검토중" | "완료" | "보류";
+export const projectStatuses = [
+  "진행중",
+  "진행예정",
+  "검토중",
+  "완료",
+  "보류",
+] as const;
+
+export const projectPriorities = ["높음", "보통", "낮음"] as const;
+
+export type ProjectStatus = (typeof projectStatuses)[number];
+export type ProjectPriority = (typeof projectPriorities)[number];
 
 export interface Project {
   id: string;
@@ -8,7 +19,7 @@ export interface Project {
   assignee: string;
   dateRange: string;
   category: string;
-  priority: "높음" | "보통" | "낮음";
+  priority: ProjectPriority;
   contact: string;
   budget: string;
   nextAction: string;
@@ -17,7 +28,7 @@ export interface Project {
   schedule: string[];
 }
 
-export const projects: Project[] = [
+export const initialProjects: Project[] = [
   {
     id: "project-001",
     title: "AOC OA 수출 제안",
@@ -36,7 +47,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-002",
-    title: "대여제 위나아 영업 자동화",
+    title: "Wina Market 영업 자동화",
     status: "진행예정",
     client: "Wina Market",
     assignee: "문오",
@@ -52,7 +63,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-003",
-    title: "통O - 여덕 풀어스 캠페인",
+    title: "TongO Retail 캠페인",
     status: "진행중",
     client: "TongO Retail",
     assignee: "김서연",
@@ -68,7 +79,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-004",
-    title: "대여제 파아너O HORECA 납품",
+    title: "PartnerO Kitchen HORECA 납품",
     status: "검토중",
     client: "PartnerO Kitchen",
     assignee: "정다은",
@@ -84,7 +95,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-005",
-    title: "SO일빙 2026년 OX 운영",
+    title: "SO Living 2026 운영",
     status: "보류",
     client: "SO Living",
     assignee: "박지훈",
@@ -100,7 +111,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-006",
-    title: "노아의 주 06000월 오프라인 행사",
+    title: "Noah Trade 오프라인 행사",
     status: "완료",
     client: "Noah Trade",
     assignee: "이하린",
@@ -115,3 +126,22 @@ export const projects: Project[] = [
     schedule: ["5/28 결과 공유"],
   },
 ];
+
+export function createEmptyProject(): Project {
+  return {
+    id: `project-${Date.now()}`,
+    title: "",
+    status: "진행예정",
+    client: "",
+    assignee: "",
+    dateRange: "",
+    category: "프로젝트",
+    priority: "보통",
+    contact: "",
+    budget: "",
+    nextAction: "",
+    memo: "",
+    tasks: [],
+    schedule: [],
+  };
+}

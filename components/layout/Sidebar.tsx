@@ -10,11 +10,24 @@ import {
   Users,
 } from "lucide-react";
 
-const menuGroups = [
+export type SidebarSection =
+  | "워크스페이스"
+  | "리드관리"
+  | "고객관리"
+  | "프로젝트관리"
+  | "할일관리"
+  | "일정관리"
+  | "메시지"
+  | "환경설정";
+
+const menuGroups: Array<{
+  label: string;
+  items: Array<{ name: SidebarSection; icon: typeof LayoutDashboard }>;
+}> = [
   {
     label: "업무",
     items: [
-      { name: "워크스페이스", icon: LayoutDashboard, active: true },
+      { name: "워크스페이스", icon: LayoutDashboard },
       { name: "리드관리", icon: Users },
       { name: "고객관리", icon: BriefcaseBusiness },
       { name: "프로젝트관리", icon: FolderKanban },
@@ -31,7 +44,13 @@ const menuGroups = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  activeSection,
+  onSelectSection,
+}: {
+  activeSection: SidebarSection;
+  onSelectSection: (section: SidebarSection) => void;
+}) {
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5">
       <div className="mb-8 flex items-center justify-between gap-3">
@@ -62,13 +81,15 @@ export function Sidebar() {
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
+                const isActive = activeSection === item.name;
 
                 return (
                   <button
                     key={item.name}
                     type="button"
+                    onClick={() => onSelectSection(item.name)}
                     className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                      item.active
+                      isActive
                         ? "bg-teal-600 text-white shadow-sm"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                     }`}

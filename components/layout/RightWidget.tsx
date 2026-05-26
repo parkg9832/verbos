@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 
 const days = Array.from({ length: 35 }, (_, index) => index + 1);
 
-export function RightWidget({ selectedProject }: { selectedProject: Project }) {
+export function RightWidget({ selectedProject }: { selectedProject: Project | null }) {
   return (
     <aside className="hidden h-screen w-80 shrink-0 overflow-y-auto border-l border-slate-200 bg-slate-50 px-4 py-5 xl:block">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -71,17 +71,23 @@ export function RightWidget({ selectedProject }: { selectedProject: Project }) {
           </p>
         </div>
         <div className="divide-y divide-slate-100">
-          {selectedProject.tasks.slice(0, 3).map((task) => (
-            <label key={task} className="flex items-start gap-3 px-4 py-3">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600"
-              />
-              <span className="min-w-0 text-sm leading-5 text-slate-700">
-                {task}
-              </span>
-            </label>
-          ))}
+          {selectedProject?.tasks.length ? (
+            selectedProject.tasks.slice(0, 3).map((task) => (
+              <label key={task} className="flex items-start gap-3 px-4 py-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600"
+                />
+                <span className="min-w-0 text-sm leading-5 text-slate-700">
+                  {task}
+                </span>
+              </label>
+            ))
+          ) : (
+            <p className="px-4 py-5 text-sm text-slate-500">
+              표시할 할일이 없습니다.
+            </p>
+          )}
         </div>
       </div>
 
@@ -91,16 +97,20 @@ export function RightWidget({ selectedProject }: { selectedProject: Project }) {
           <p className="text-sm font-semibold text-slate-950">다가오는 일정</p>
         </div>
         <div className="space-y-3">
-          {selectedProject.schedule.map((item) => (
-            <div key={item} className="rounded-lg bg-slate-50 px-3 py-2">
-              <p className="truncate text-sm font-medium text-slate-800">
-                {item}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {selectedProject.client}
-              </p>
-            </div>
-          ))}
+          {selectedProject?.schedule.length ? (
+            selectedProject.schedule.map((item) => (
+              <div key={item} className="rounded-lg bg-slate-50 px-3 py-2">
+                <p className="truncate text-sm font-medium text-slate-800">
+                  {item}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {selectedProject.client}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">표시할 일정이 없습니다.</p>
+          )}
         </div>
       </div>
     </aside>
