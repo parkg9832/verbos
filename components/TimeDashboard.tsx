@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import { CalendarDays, CheckCircle2, Trash2 } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { CalendarDays, CheckCircle2, Trash2, X } from "lucide-react";
 import type { Project } from "@/lib/dummy-data";
 import { useTimeManagement } from "@/contexts/TimeManagementContext";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +9,7 @@ import { GoogleSyncControls } from "@/components/GoogleSyncControls";
 import { UnifiedTimeEntryForm } from "@/components/UnifiedTimeEntryForm";
 
 const calendarDays = Array.from({ length: 35 }, (_, index) => index + 1);
+const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
 function formatDate(day: number) {
   return `2026-05-${String(day).padStart(2, "0")}`;
@@ -29,14 +29,10 @@ function syncTone(status: string) {
 }
 
 export function TimeDashboard({ projects }: { projects: Project[] }) {
-  const {
-    tasks,
-    schedules,
-    toggleTask,
-    deleteTask,
-    deleteSchedule,
-  } = useTimeManagement();
+  const { tasks, schedules, toggleTask, deleteTask, deleteSchedule } =
+    useTimeManagement();
   const [selectedDate, setSelectedDate] = useState(formatDate(14));
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const selectedTasks = useMemo(
     () => tasks.filter((task) => task.dueDate === selectedDate),
@@ -57,8 +53,13 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
     );
   }
 
+  function openDate(date: string) {
+    setSelectedDate(date);
+    setIsModalOpen(true);
+  }
+
   return (
-    <section className="min-w-0 flex-1 overflow-y-auto bg-white px-4 py-4 lg:px-6 lg:py-5">
+    <section className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-white px-4 py-4 lg:px-6 lg:py-5">
       <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-teal-700">일정 및 할일</p>
@@ -66,7 +67,7 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
             캘린더 중심 업무 대시보드
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            날짜를 클릭하면 입력 폼 날짜가 바뀌고, 시간 입력 여부에 따라 할일/일정이 자동 분류됩니다.
+            날짜를 클릭하면 입력 창이 열리고, 시간 입력 여부에 따라 할일/일정으로 자동 분류됩니다.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:w-[420px]">
@@ -76,102 +77,94 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
-        <div className="space-y-5">
-          <UnifiedTimeEntryForm
-            projects={projects}
-            preset={{ date: selectedDate }}
-          />
-
-          <div className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <CalendarDays size={18} className="text-teal-600" />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-950">
-                    2026년 5월
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    일정은 시간 블록, 할일은 점 표시로 보입니다.
-                  </p>
-                </div>
-              </div>
-              <Badge tone="blue">Month</Badge>
-            </div>
-
-            <div className="grid grid-cols-7 gap-2 text-xs">
-              {["월", "화", "수", "목", "금", "토", "일"].map((day) => (
-                <p
-                  key={day}
-                  className="py-2 text-center font-semibold text-slate-400"
-                >
-                  {day}
+      <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+        <div className="flex min-h-[720px] min-w-0 flex-col rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur xl:min-h-0">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <CalendarDays size={18} className="text-teal-600" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-950">
+                  2026년 5월
                 </p>
-              ))}
-              {calendarDays.map((day) => {
-                const date = formatDate(day);
-                const daySchedules = schedules.filter(
-                  (event) => event.date === date,
-                );
-                const dayTasks = tasks.filter((task) => task.dueDate === date);
-                const isSelected = selectedDate === date;
-
-                return (
-                  <button
-                    key={date}
-                    type="button"
-                    onClick={() => setSelectedDate(date)}
-                    className={`min-h-28 rounded-lg border p-2 text-left transition-colors duration-200 ${
-                      isSelected
-                        ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
-                        : "border-slate-200 bg-slate-50 hover:border-teal-200 hover:bg-white"
-                    }`}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-slate-700">
-                        {day}
-                      </span>
-                      {dayTasks.length > 0 ? (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                          할일 {dayTasks.length}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="space-y-1">
-                      {daySchedules.slice(0, 2).map((event) => (
-                        <div
-                          key={event.id}
-                          className="truncate rounded-md bg-teal-600 px-2 py-1 text-[11px] font-semibold text-white"
-                        >
-                          {event.startTime} {event.title}
-                        </div>
-                      ))}
-                      {dayTasks.slice(0, 2).map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-center gap-1 truncate text-[11px] text-slate-600"
-                        >
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                          <span className={task.completed ? "line-through" : ""}>
-                            {task.title}
-                          </span>
-                        </div>
-                      ))}
-                      {daySchedules.length + dayTasks.length > 4 ? (
-                        <p className="text-[11px] font-medium text-slate-400">
-                          +{daySchedules.length + dayTasks.length - 4}개 더보기
-                        </p>
-                      ) : null}
-                    </div>
-                  </button>
-                );
-              })}
+                <p className="mt-1 text-xs text-slate-500">
+                  일정은 시간 블록, 할일은 점 표시로 보입니다.
+                </p>
+              </div>
             </div>
+            <Badge tone="blue">Month</Badge>
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 text-xs">
+            {weekDays.map((day) => (
+              <p
+                key={day}
+                className="py-2 text-center font-semibold text-slate-400"
+              >
+                {day}
+              </p>
+            ))}
+          </div>
+
+          <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-5 gap-2 text-xs">
+            {calendarDays.map((day) => {
+              const date = formatDate(day);
+              const daySchedules = schedules.filter((event) => event.date === date);
+              const dayTasks = tasks.filter((task) => task.dueDate === date);
+              const isSelected = selectedDate === date;
+
+              return (
+                <button
+                  key={date}
+                  type="button"
+                  onClick={() => openDate(date)}
+                  className={`relative min-h-32 overflow-hidden rounded-lg border p-2 text-left transition-colors duration-200 ${
+                    isSelected
+                      ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
+                      : "border-slate-200 bg-slate-50 hover:border-teal-200 hover:bg-white"
+                  }`}
+                >
+                  <span className="absolute left-2 top-2 z-10 text-xs font-semibold text-slate-700">
+                    {day}
+                  </span>
+                  {dayTasks.length > 0 ? (
+                    <span className="absolute right-2 top-2 z-10 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      할일 {dayTasks.length}
+                    </span>
+                  ) : null}
+
+                  <div className="space-y-1 pt-8">
+                    {daySchedules.slice(0, 2).map((event) => (
+                      <div
+                        key={event.id}
+                        className="truncate rounded-md bg-teal-600 px-2 py-1 text-[11px] font-semibold text-white"
+                      >
+                        {event.startTime} {event.title}
+                      </div>
+                    ))}
+                    {dayTasks.slice(0, 2).map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-1 truncate text-[11px] text-slate-600"
+                      >
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                        <span className={task.completed ? "line-through" : ""}>
+                          {task.title}
+                        </span>
+                      </div>
+                    ))}
+                    {daySchedules.length + dayTasks.length > 4 ? (
+                      <p className="text-[11px] font-medium text-slate-400">
+                        +{daySchedules.length + dayTasks.length - 4}개 더보기
+                      </p>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <GoogleSyncControls />
 
           <div className="rounded-lg border border-slate-200 bg-white/90 shadow-sm backdrop-blur">
@@ -269,6 +262,38 @@ export function TimeDashboard({ projects }: { projects: Project[] }) {
           </div>
         </aside>
       </div>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-lg border border-white/70 bg-white/95 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-950">
+                  {selectedDate} 입력
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  시간 없이 저장하면 할일, 시간 범위를 넣으면 일정입니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900"
+                aria-label="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5">
+              <UnifiedTimeEntryForm
+                projects={projects}
+                preset={{ date: selectedDate }}
+                onSubmitted={() => setIsModalOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

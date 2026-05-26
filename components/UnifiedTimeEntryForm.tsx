@@ -18,9 +18,11 @@ export interface SmartTimeFormPreset {
 export function UnifiedTimeEntryForm({
   projects,
   preset,
+  onSubmitted,
 }: {
   projects: Project[];
   preset?: SmartTimeFormPreset;
+  onSubmitted?: () => void;
 }) {
   const { addTask, addSchedule } = useTimeManagement();
   const firstProjectId = projects[0]?.id ?? "";
@@ -41,6 +43,13 @@ export function UnifiedTimeEntryForm({
   }, [firstProjectId, projectId]);
 
   const entryType = startTime || endTime ? "일정" : "할일";
+
+  function resetForm() {
+    setTitle("");
+    setStartTime("");
+    setEndTime("");
+    setPriority("보통");
+  }
 
   function submit() {
     setError(null);
@@ -67,8 +76,8 @@ export function UnifiedTimeEntryForm({
         dueDate: date,
         priority,
       });
-      setTitle("");
-      setPriority("보통");
+      resetForm();
+      onSubmitted?.();
       return;
     }
 
@@ -91,10 +100,8 @@ export function UnifiedTimeEntryForm({
       location: "",
       description: "",
     });
-    setTitle("");
-    setStartTime("");
-    setEndTime("");
-    setPriority("보통");
+    resetForm();
+    onSubmitted?.();
   }
 
   return (
@@ -184,7 +191,7 @@ export function UnifiedTimeEntryForm({
               onChange={(event) => setPriority(event.target.value as TimePriority)}
               className="form-input"
             >
-              {["높음", "보통", "낮음"].map((item) => (
+              {(["높음", "보통", "낮음"] as TimePriority[]).map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
