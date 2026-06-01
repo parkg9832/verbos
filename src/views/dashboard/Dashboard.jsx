@@ -1,381 +1,564 @@
-import React from 'react'
-import classNames from 'classnames'
-
+import React, { useState } from 'react'
 import {
-  CAvatar,
-  CButton,
-  CButtonGroup,
   CCard,
   CCardBody,
-  CCardFooter,
   CCardHeader,
   CCol,
-  CProgress,
   CRow,
+  CFormInput,
+  CFormSelect,
+  CButton,
   CTable,
+  CTableHead,
+  CTableRow,
+  CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import {
-  cibCcAmex,
-  cibCcApplePay,
-  cibCcMastercard,
-  cibCcPaypal,
-  cibCcStripe,
-  cibCcVisa,
-  cibGoogle,
-  cibFacebook,
-  cibLinkedin,
-  cifBr,
-  cifEs,
-  cifFr,
-  cifIn,
-  cifPl,
-  cifUs,
-  cibTwitter,
-  cilCloudDownload,
-  cilPeople,
-  cilUser,
-  cilUserFemale,
-} from '@coreui/icons'
-
-import avatar1 from 'src/assets/images/avatars/1.jpg'
-import avatar2 from 'src/assets/images/avatars/2.jpg'
-import avatar3 from 'src/assets/images/avatars/3.jpg'
-import avatar4 from 'src/assets/images/avatars/4.jpg'
-import avatar5 from 'src/assets/images/avatars/5.jpg'
-import avatar6 from 'src/assets/images/avatars/6.jpg'
-
-import WidgetsBrand from '../widgets/WidgetsBrand'
-import WidgetsDropdown from '../widgets/WidgetsDropdown'
-import MainChart from './MainChart'
+import Chart from 'react-apexcharts'
 
 const Dashboard = () => {
-  const progressExample = [
-    { title: '방문자 수', value: '29,703 명', percent: 40, color: 'success' },
-    { title: '순방문자', value: '24,093 명', percent: 20, color: 'info' },
-    { title: '페이지뷰', value: '78,706 회', percent: 60, color: 'warning' },
-    { title: '신규 사용자', value: '22,123 명', percent: 80, color: 'danger' },
-    { title: '이탈률', value: '평균 비율', percent: 40.15, color: 'primary' },
+  // Highly realistic pre-loaded mock data (May/June 2026)
+  const [data, setData] = useState([
+    {
+      id: 1,
+      date: '2026-05-20',
+      channel: '인스타그램',
+      topic: 'Amiko 플랫폼 서비스 입점 티저',
+      reach: 12500,
+      likes: 850,
+      comments: 120,
+      saves: 230,
+      shares: 90,
+      clicks: 450,
+      country: '한국',
+    },
+    {
+      id: 2,
+      date: '2026-05-22',
+      channel: '틱톡',
+      topic: 'Arirakku 브랜드 런칭 댄스 챌린지',
+      reach: 45000,
+      likes: 3200,
+      comments: 450,
+      saves: 980,
+      shares: 1200,
+      clicks: 1800,
+      country: '일본',
+    },
+    {
+      id: 3,
+      date: '2026-05-25',
+      channel: '인스타그램',
+      topic: '배송 파트너십 오픈 공식 안내',
+      reach: 8900,
+      likes: 420,
+      comments: 35,
+      saves: 45,
+      shares: 12,
+      clicks: 120,
+      country: '한국',
+    },
+    {
+      id: 4,
+      date: '2026-05-27',
+      channel: '인스타그램',
+      topic: 'Arirakku 룩북 리뉴얼 릴스',
+      reach: 18000,
+      likes: 1450,
+      comments: 180,
+      saves: 510,
+      shares: 240,
+      clicks: 890,
+      country: '미국',
+    },
+    {
+      id: 5,
+      date: '2026-05-30',
+      channel: '틱톡',
+      topic: 'Amiko 앱 1분 가이드 튜토리얼',
+      reach: 35000,
+      likes: 2100,
+      comments: 310,
+      saves: 650,
+      shares: 420,
+      clicks: 1100,
+      country: '베트남',
+    },
+  ])
+
+  // Form input states
+  const [formDate, setFormDate] = useState('')
+  const [formChannel, setFormChannel] = useState('인스타그램')
+  const [formTopic, setFormTopic] = useState('')
+  const [formReach, setFormReach] = useState('')
+  const [formLikes, setFormLikes] = useState('')
+  const [formComments, setFormComments] = useState('')
+  const [formSaves, setFormSaves] = useState('')
+  const [formShares, setFormShares] = useState('')
+  const [formClicks, setFormClicks] = useState('')
+  const [formCountry, setFormCountry] = useState('한국')
+
+  // Save new record
+  const handleSave = (e) => {
+    e.preventDefault()
+    if (!formDate || !formTopic || !formReach) return
+
+    const newRecord = {
+      id: data.length + 1,
+      date: formDate,
+      channel: formChannel,
+      topic: formTopic,
+      reach: parseInt(formReach) || 0,
+      likes: parseInt(formLikes) || 0,
+      comments: parseInt(formComments) || 0,
+      saves: parseInt(formSaves) || 0,
+      shares: parseInt(formShares) || 0,
+      clicks: parseInt(formClicks) || 0,
+      country: formCountry,
+    }
+
+    setData([...data, newRecord])
+
+    // Reset inputs
+    setFormDate('')
+    setFormTopic('')
+    setFormReach('')
+    setFormLikes('')
+    setFormComments('')
+    setFormSaves('')
+    setFormShares('')
+    setFormClicks('')
+  }
+
+  // Delete a record
+  const handleDelete = (id) => {
+    setData(data.filter((item) => item.id !== id))
+  }
+
+  // --- Dynamic KPI Calculations ---
+  const totalReach = data.reduce((acc, curr) => acc + curr.reach, 0)
+  const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0)
+
+  // Computed ER for each row = ((Likes + Comments + Saves + Shares) / Reach) * 100
+  const rowERs = data.map((item) => {
+    if (item.reach === 0) return 0
+    return ((item.likes + item.comments + item.saves + item.shares) / item.reach) * 100
+  })
+  const avgER = rowERs.length > 0 ? rowERs.reduce((acc, curr) => acc + curr, 0) / rowERs.length : 0
+
+  // Top referer country calculation (based on reach sum)
+  const countryReachMap = {}
+  data.forEach((item) => {
+    countryReachMap[item.country] = (countryReachMap[item.country] || 0) + item.reach
+  })
+  let topCountry = '-'
+  let maxReach = 0
+  Object.keys(countryReachMap).forEach((c) => {
+    if (countryReachMap[c] > maxReach) {
+      maxReach = countryReachMap[c]
+      topCountry = c
+    }
+  })
+
+  // --- ApexCharts Data Structuring ---
+  // Chart A: Reach vs Engagement Mixed Chart
+  const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
+  const chartDates = sortedData.map((item) => item.date)
+  const chartReachData = sortedData.map((item) => item.reach)
+  const chartERData = sortedData.map((item) => {
+    if (item.reach === 0) return 0
+    return parseFloat(
+      (((item.likes + item.comments + item.saves + item.shares) / item.reach) * 100).toFixed(2)
+    )
+  })
+
+  const mixedChartOptions = {
+    chart: {
+      id: 'reach-er-trend',
+      toolbar: { show: false },
+    },
+    stroke: {
+      width: [0, 3],
+      curve: 'smooth',
+    },
+    colors: ['#321fdb', '#f9b115'],
+    fill: {
+      opacity: [0.85, 1],
+    },
+    labels: chartDates,
+    xaxis: {
+      type: 'category',
+    },
+    yaxis: [
+      {
+        title: { text: '도달(조회)수' },
+      },
+      {
+        opposite: true,
+        title: { text: '참여율 (ER %)' },
+        labels: {
+          formatter: (value) => `${value}%`,
+        },
+      },
+    ],
+    tooltip: {
+      shared: true,
+      intersect: false,
+      y: {
+        formatter: (y, { seriesIndex }) => {
+          if (typeof y !== 'undefined') {
+            return seriesIndex === 0 ? `${y.toLocaleString()} 회` : `${y}%`
+          }
+          return y
+        },
+      },
+    },
+  }
+
+  const mixedChartSeries = [
+    {
+      name: '도달수',
+      type: 'column',
+      data: chartReachData,
+    },
+    {
+      name: '참여율 (ER)',
+      type: 'line',
+      data: chartERData,
+    },
   ]
 
-  const progressGroupExample1 = [
-    { title: '월요일', value1: 34, value2: 78 },
-    { title: '화요일', value1: 56, value2: 94 },
-    { title: '수요일', value1: 12, value2: 67 },
-    { title: '목요일', value1: 43, value2: 91 },
-    { title: '금요일', value1: 22, value2: 73 },
-    { title: '토요일', value1: 53, value2: 82 },
-    { title: '일요일', value1: 9, value2: 69 },
-  ]
+  // Chart B: Country Reach Donut Chart
+  const donutLabels = Object.keys(countryReachMap)
+  const donutSeries = Object.values(countryReachMap)
 
-  const progressGroupExample2 = [
-    { title: '남성', icon: cilUser, value: 53 },
-    { title: '여성', icon: cilUserFemale, value: 43 },
-  ]
-
-  const progressGroupExample3 = [
-    { title: '자연 검색', icon: cibGoogle, percent: 56, value: '191,235' },
-    { title: '페이스북', icon: cibFacebook, percent: 15, value: '51,223' },
-    { title: '트위터', icon: cibTwitter, percent: 11, value: '37,564' },
-    { title: '링크드인', icon: cibLinkedin, percent: 8, value: '27,319' },
-  ]
-
-  const tableExample = [
-    {
-      avatar: { src: avatar1, status: 'success' },
-      user: {
-        name: 'Yiorgos Avraamu',
-        new: true,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'USA', flag: cifUs },
-      usage: {
-        value: 50,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'success',
-      },
-      payment: { name: 'Mastercard', icon: cibCcMastercard },
-      activity: '10 sec ago',
+  const donutChartOptions = {
+    chart: {
+      id: 'country-distribution',
     },
-    {
-      avatar: { src: avatar2, status: 'danger' },
-      user: {
-        name: 'Avram Tarasios',
-        new: false,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Brazil', flag: cifBr },
-      usage: {
-        value: 22,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'info',
-      },
-      payment: { name: 'Visa', icon: cibCcVisa },
-      activity: '5 minutes ago',
+    labels: donutLabels,
+    colors: ['#321fdb', '#2eb85c', '#f9b115', '#e55353', '#3399ff', '#6f42c1'],
+    legend: {
+      position: 'bottom',
     },
-    {
-      avatar: { src: avatar3, status: 'warning' },
-      user: { name: 'Quintin Ed', new: true, registered: 'Jan 1, 2023' },
-      country: { name: 'India', flag: cifIn },
-      usage: {
-        value: 74,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'warning',
+    responsive: [
+      {
+        breakpoint: 480,
+        options: {
+          chart: { width: 200 },
+          legend: { position: 'bottom' },
+        },
       },
-      payment: { name: 'Stripe', icon: cibCcStripe },
-      activity: '1 hour ago',
-    },
-    {
-      avatar: { src: avatar4, status: 'secondary' },
-      user: { name: 'Enéas Kwadwo', new: true, registered: 'Jan 1, 2023' },
-      country: { name: 'France', flag: cifFr },
-      usage: {
-        value: 98,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'danger',
-      },
-      payment: { name: 'PayPal', icon: cibCcPaypal },
-      activity: 'Last month',
-    },
-    {
-      avatar: { src: avatar5, status: 'success' },
-      user: {
-        name: 'Agapetus Tadeáš',
-        new: true,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Spain', flag: cifEs },
-      usage: {
-        value: 22,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'primary',
-      },
-      payment: { name: 'Google Wallet', icon: cibCcApplePay },
-      activity: 'Last week',
-    },
-    {
-      avatar: { src: avatar6, status: 'danger' },
-      user: {
-        name: 'Friderik Dávid',
-        new: true,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Poland', flag: cifPl },
-      usage: {
-        value: 43,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'success',
-      },
-      payment: { name: 'Amex', icon: cibCcAmex },
-      activity: 'Last week',
-    },
-  ]
+    ],
+  }
 
   return (
     <>
-      <WidgetsDropdown className="mb-4" />
-      <CCard className="mb-4">
-        <CCardBody>
-          <CRow>
-            <CCol sm={5}>
-              <h4 id="traffic" className="card-title mb-0">
-                트래픽 현황
-              </h4>
-              <div className="small text-body-secondary">2023년 1월 - 7월</div>
-            </CCol>
-            <CCol sm={7} className="d-none d-md-block">
-              <CButton color="primary" className="float-end">
-                <CIcon icon={cilCloudDownload} />
-              </CButton>
-              <CButtonGroup className="float-end me-3">
-                {['일별', '월별', '연별'].map((value) => (
-                  <CButton
-                    color="outline-secondary"
-                    key={value}
-                    className="mx-0"
-                    active={value === '월별'}
-                  >
-                    {value}
-                  </CButton>
-                ))}
-              </CButtonGroup>
-            </CCol>
-          </CRow>
-          <MainChart />
-        </CCardBody>
-        <CCardFooter>
-          <CRow
-            xs={{ cols: 1, gutter: 4 }}
-            sm={{ cols: 2 }}
-            lg={{ cols: 4 }}
-            xl={{ cols: 5 }}
-            className="mb-2 text-center"
-          >
-            {progressExample.map((item, index, items) => (
-              <CCol
-                className={classNames({
-                  'd-none d-xl-block': index + 1 === items.length,
-                })}
-                key={index}
-              >
-                <div className="text-body-secondary">{item.title}</div>
-                <div className="fw-semibold text-truncate">
-                  {item.value} ({item.percent}%)
-                </div>
-                <CProgress thin className="mt-2" color={item.color} value={item.percent} />
-              </CCol>
-            ))}
-          </CRow>
-        </CCardFooter>
-      </CCard>
-      <WidgetsBrand className="mb-4" withCharts />
+      {/* 1. Core KPI Widgets */}
+      <CRow className="mb-4" xs={{ gutter: 4 }}>
+        <CCol sm={6} xl={3}>
+          <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #321fdb, #1f1498)' }}>
+            <CCardBody className="pb-4 px-4 pt-4">
+              <div className="small text-white-50 fw-semibold text-uppercase">총 도달 (조회)수</div>
+              <div className="fs-2 fw-bold mt-2">{totalReach.toLocaleString()} 회</div>
+              <div className="small text-white-50 mt-3">글로벌 누적 소셜 성과</div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+        <CCol sm={6} xl={3}>
+          <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #f9b115, #f6960b)' }}>
+            <CCardBody className="pb-4 px-4 pt-4">
+              <div className="small text-white-50 fw-semibold text-uppercase">평균 참여율 (ER)</div>
+              <div className="fs-2 fw-bold mt-2">{avgER.toFixed(2)}%</div>
+              <div className="small text-white-50 mt-3">업계 표준 대비 고효율 달성</div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+        <CCol sm={6} xl={3}>
+          <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #2eb85c, #1b8a3e)' }}>
+            <CCardBody className="pb-4 px-4 pt-4">
+              <div className="small text-white-50 fw-semibold text-uppercase">총 프로필/링크 클릭수</div>
+              <div className="fs-2 fw-bold mt-2">{totalClicks.toLocaleString()} 클릭</div>
+              <div className="small text-white-50 mt-3">실제 Amiko 웹사이트 전환 연결</div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+        <CCol sm={6} xl={3}>
+          <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #3399ff, #2378cc)' }}>
+            <CCardBody className="pb-4 px-4 pt-4">
+              <div className="small text-white-50 fw-semibold text-uppercase">최다 유입 국가</div>
+              <div className="fs-2 fw-bold mt-2">{topCountry}</div>
+              <div className="small text-white-50 mt-3">현재 점유율 1순위 글로벌 타깃</div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+      </CRow>
+
+      {/* 2. ApexCharts Area */}
+      <CRow className="mb-4">
+        {/* Chart A: Reach vs ER Trend */}
+        <CCol xl={8} className="mb-4">
+          <CCard className="border-0 shadow-sm h-100">
+            <CCardHeader className="bg-white border-0 pt-4 px-4">
+              <h5 className="m-0 fw-bold text-dark">도달수 vs 참여율 트렌드</h5>
+              <span className="small text-muted">콘텐츠 게시일별 도달 성과와 평균 참여율을 종합 비교합니다.</span>
+            </CCardHeader>
+            <CCardBody className="p-4">
+              <Chart
+                options={mixedChartOptions}
+                series={mixedChartSeries}
+                type="line"
+                height={350}
+              />
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+        {/* Chart B: Target Country Donut */}
+        <CCol xl={4} className="mb-4">
+          <CCard className="border-0 shadow-sm h-100">
+            <CCardHeader className="bg-white border-0 pt-4 px-4">
+              <h5 className="m-0 fw-bold text-dark">글로벌 타깃 국가 비중</h5>
+              <span className="small text-muted">누적 도달수 기반 유입 국가별 세부 점유율 현황입니다.</span>
+            </CCardHeader>
+            <CCardBody className="p-4 d-flex align-items-center justify-content-center">
+              {donutSeries.length > 0 ? (
+                <Chart
+                  options={donutChartOptions}
+                  series={donutSeries}
+                  type="donut"
+                  width={340}
+                />
+              ) : (
+                <div className="text-muted small">데이터가 없습니다.</div>
+              )}
+            </CCardBody>
+          </CCard>
+        </CCol>
+      </CRow>
+
+      {/* 3. Input Form & Excel Table Area */}
       <CRow>
-        <CCol xs>
-          <CCard className="mb-4">
-            <CCardHeader>트래픽 및 매출 현황</CCardHeader>
-            <CCardBody>
-              <CRow>
-                <CCol xs={12} md={6} xl={6}>
-                  <CRow>
-                    <CCol xs={6}>
-                      <div className="border-start border-start-4 border-start-info py-1 px-3">
-                        <div className="text-body-secondary text-truncate small">신규 고객</div>
-                        <div className="fs-5 fw-semibold">9,123</div>
-                      </div>
-                    </CCol>
-                    <CCol xs={6}>
-                      <div className="border-start border-start-4 border-start-danger py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">
-                          재방문 고객
-                        </div>
-                        <div className="fs-5 fw-semibold">22,643</div>
-                      </div>
-                    </CCol>
-                  </CRow>
-                  <hr className="mt-0" />
-                  {progressGroupExample1.map((item, index) => (
-                    <div className="progress-group mb-4" key={index}>
-                      <div className="progress-group-prepend">
-                        <span className="text-body-secondary small">{item.title}</span>
-                      </div>
-                      <div className="progress-group-bars">
-                        <CProgress thin color="info" value={item.value1} />
-                        <CProgress thin color="danger" value={item.value2} />
-                      </div>
-                    </div>
-                  ))}
-                </CCol>
-                <CCol xs={12} md={6} xl={6}>
-                  <CRow>
-                    <CCol xs={6}>
-                      <div className="border-start border-start-4 border-start-warning py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">페이지뷰</div>
-                        <div className="fs-5 fw-semibold">78,623</div>
-                      </div>
-                    </CCol>
-                    <CCol xs={6}>
-                      <div className="border-start border-start-4 border-start-success py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">자연 유입</div>
-                        <div className="fs-5 fw-semibold">49,123</div>
-                      </div>
-                    </CCol>
-                  </CRow>
+        {/* Left/Main Column: Input & Table */}
+        <CCol xl={9} className="mb-4">
+          {/* Input Form Card */}
+          <CCard className="border-0 shadow-sm mb-4">
+            <CCardHeader className="bg-white border-0 pt-4 px-4">
+              <h5 className="m-0 fw-bold text-dark">SNS 성과 데이터 입력 (실시간 대시보드 연동)</h5>
+              <span className="small text-muted">새로운 소셜 지표를 입력하면 차트와 최상단 KPI 위젯이 즉각 업데이트됩니다.</span>
+            </CCardHeader>
+            <CCardBody className="px-4 pb-4">
+              <form onSubmit={handleSave}>
+                <CRow className="g-3">
+                  <CCol md={3}>
+                    <label className="form-label small fw-semibold text-secondary">게시일</label>
+                    <CFormInput
+                      type="date"
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                      required
+                    />
+                  </CCol>
+                  <CCol md={3}>
+                    <label className="form-label small fw-semibold text-secondary">채널</label>
+                    <CFormSelect
+                      value={formChannel}
+                      onChange={(e) => setFormChannel(e.target.value)}
+                    >
+                      <option value="인스타그램">인스타그램 (Instagram)</option>
+                      <option value="틱톡">틱톡 (TikTok)</option>
+                    </CFormSelect>
+                  </CCol>
+                  <CCol md={6}>
+                    <label className="form-label small fw-semibold text-secondary">콘텐츠 주제</label>
+                    <CFormInput
+                      placeholder="예: Arirakku 하계 컬렉션 코디 추천"
+                      value={formTopic}
+                      onChange={(e) => setFormTopic(e.target.value)}
+                      required
+                    />
+                  </CCol>
 
-                  <hr className="mt-0" />
+                  <CCol xs={6} sm={4} md={2.4}>
+                    <label className="form-label small fw-semibold text-secondary">도달수(조회수)</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formReach}
+                      onChange={(e) => setFormReach(e.target.value)}
+                      required
+                    />
+                  </CCol>
+                  <CCol xs={6} sm={4} md={2.4}>
+                    <label className="form-label small fw-semibold text-secondary">좋아요</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formLikes}
+                      onChange={(e) => setFormLikes(e.target.value)}
+                    />
+                  </CCol>
+                  <CCol xs={6} sm={4} md={2.4}>
+                    <label className="form-label small fw-semibold text-secondary">댓글수</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formComments}
+                      onChange={(e) => setFormComments(e.target.value)}
+                    />
+                  </CCol>
+                  <CCol xs={6} sm={4} md={2.4}>
+                    <label className="form-label small fw-semibold text-secondary">저장수</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formSaves}
+                      onChange={(e) => setFormSaves(e.target.value)}
+                    />
+                  </CCol>
+                  <CCol xs={6} sm={4} md={2.4}>
+                    <label className="form-label small fw-semibold text-secondary">공유수</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formShares}
+                      onChange={(e) => setFormShares(e.target.value)}
+                    />
+                  </CCol>
 
-                  {progressGroupExample2.map((item, index) => (
-                    <div className="progress-group mb-4" key={index}>
-                      <div className="progress-group-header">
-                        <CIcon className="me-2" icon={item.icon} size="lg" />
-                        <span>{item.title}</span>
-                        <span className="ms-auto fw-semibold">{item.value}%</span>
-                      </div>
-                      <div className="progress-group-bars">
-                        <CProgress thin color="warning" value={item.value} />
-                      </div>
-                    </div>
-                  ))}
+                  <CCol md={3}>
+                    <label className="form-label small fw-semibold text-secondary">주요 국가</label>
+                    <CFormSelect
+                      value={formCountry}
+                      onChange={(e) => setFormCountry(e.target.value)}
+                    >
+                      <option value="한국">한국</option>
+                      <option value="미국">미국</option>
+                      <option value="일본">일본</option>
+                      <option value="베트남">베트남</option>
+                      <option value="인도네시아">인도네시아</option>
+                    </CFormSelect>
+                  </CCol>
+                  <CCol md={3}>
+                    <label className="form-label small fw-semibold text-secondary">링크 클릭수</label>
+                    <CFormInput
+                      type="number"
+                      placeholder="0"
+                      value={formClicks}
+                      onChange={(e) => setFormClicks(e.target.value)}
+                    />
+                  </CCol>
+                  <CCol md={6} className="d-flex align-items-end">
+                    <CButton type="submit" color="primary" className="w-100 fw-bold text-white py-2">
+                      새 성과 데이터 저장
+                    </CButton>
+                  </CCol>
+                </CRow>
+              </form>
+            </CCardBody>
+          </CCard>
 
-                  <div className="mb-5"></div>
-
-                  {progressGroupExample3.map((item, index) => (
-                    <div className="progress-group" key={index}>
-                      <div className="progress-group-header">
-                        <CIcon className="me-2" icon={item.icon} size="lg" />
-                        <span>{item.title}</span>
-                        <span className="ms-auto fw-semibold">
-                          {item.value}{' '}
-                          <span className="text-body-secondary small">({item.percent}%)</span>
-                        </span>
-                      </div>
-                      <div className="progress-group-bars">
-                        <CProgress thin color="success" value={item.percent} />
-                      </div>
-                    </div>
-                  ))}
-                </CCol>
-              </CRow>
-
-              <br />
-
-              <CTable align="middle" className="mb-0 border" hover responsive>
-                <CTableHead className="text-nowrap">
-                  <CTableRow>
-                    <CTableHeaderCell className="bg-body-tertiary text-center">
-                      <CIcon icon={cilPeople} />
-                    </CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary">사용자</CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary text-center">
-                      국가
-                    </CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary">사용량</CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary text-center">
-                      결제 수단
-                    </CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary">활동</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {tableExample.map((item, index) => (
-                    <CTableRow v-for="item in tableItems" key={index}>
-                      <CTableDataCell className="text-center">
-                        <CAvatar size="md" src={item.avatar.src} status={item.avatar.status} />
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <div>{item.user.name}</div>
-                        <div className="small text-body-secondary text-nowrap">
-                          <span>{item.user.new ? '신규' : '기존'}</span> | 등록일:{' '}
-                          {item.user.registered}
-                        </div>
-                      </CTableDataCell>
-                      <CTableDataCell className="text-center">
-                        <CIcon size="xl" icon={item.country.flag} title={item.country.name} />
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <div className="d-flex justify-content-between text-nowrap">
-                          <div className="fw-semibold">{item.usage.value}%</div>
-                          <div className="ms-3">
-                            <small className="text-body-secondary">{item.usage.period}</small>
-                          </div>
-                        </div>
-                        <CProgress thin color={item.usage.color} value={item.usage.value} />
-                      </CTableDataCell>
-                      <CTableDataCell className="text-center">
-                        <CIcon size="xl" icon={item.payment.icon} />
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <div className="small text-body-secondary text-nowrap">최근 로그인</div>
-                        <div className="fw-semibold text-nowrap">{item.activity}</div>
-                      </CTableDataCell>
+          {/* High-density Excel Raw Data Table */}
+          <CCard className="border-0 shadow-sm">
+            <CCardHeader className="bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+              <div>
+                <h5 className="m-0 fw-bold text-dark">소셜 원본 데이터 시트 (Excel 원본 통합뷰)</h5>
+                <span className="small text-muted">등록된 모든 소셜 미디어 원본 지표와 연산된 기여도를 한눈에 검토합니다.</span>
+              </div>
+            </CCardHeader>
+            <CCardBody className="px-4 pb-4">
+              <div className="table-responsive">
+                <CTable bordered hover align="middle" className="mb-0 text-nowrap text-center">
+                  <CTableHead className="bg-light">
+                    <CTableRow>
+                      <CTableHeaderCell>게시일</CTableHeaderCell>
+                      <CTableHeaderCell>채널</CTableHeaderCell>
+                      <CTableHeaderCell>주제</CTableHeaderCell>
+                      <CTableHeaderCell>도달수</CTableHeaderCell>
+                      <CTableHeaderCell>좋아요</CTableHeaderCell>
+                      <CTableHeaderCell>댓글</CTableHeaderCell>
+                      <CTableHeaderCell>저장</CTableHeaderCell>
+                      <CTableHeaderCell>공유</CTableHeaderCell>
+                      <CTableHeaderCell>클릭수</CTableHeaderCell>
+                      <CTableHeaderCell>국가</CTableHeaderCell>
+                      <CTableHeaderCell className="text-primary fw-bold">참여율(ER)</CTableHeaderCell>
+                      <CTableHeaderCell>관리</CTableHeaderCell>
                     </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
+                  </CTableHead>
+                  <CTableBody>
+                    {sortedData.map((item) => {
+                      const er = item.reach > 0 ? ((item.likes + item.comments + item.saves + item.shares) / item.reach) * 100 : 0
+                      return (
+                        <CTableRow key={item.id}>
+                          <CTableDataCell className="small">{item.date}</CTableDataCell>
+                          <CTableDataCell>
+                            <span className={`badge px-2 py-1 ${item.channel === '인스타그램' ? 'bg-danger-subtle text-danger' : 'bg-dark text-white'}`}>
+                              {item.channel}
+                            </span>
+                          </CTableDataCell>
+                          <CTableDataCell className="text-start fw-medium small" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.topic}
+                          </CTableDataCell>
+                          <CTableDataCell className="small">{item.reach.toLocaleString()} 회</CTableDataCell>
+                          <CTableDataCell className="small">{item.likes.toLocaleString()}</CTableDataCell>
+                          <CTableDataCell className="small">{item.comments.toLocaleString()}</CTableDataCell>
+                          <CTableDataCell className="small">{item.saves.toLocaleString()}</CTableDataCell>
+                          <CTableDataCell className="small">{item.shares.toLocaleString()}</CTableDataCell>
+                          <CTableDataCell className="small text-success fw-medium">{item.clicks.toLocaleString()}</CTableDataCell>
+                          <CTableDataCell className="small fw-semibold">{item.country}</CTableDataCell>
+                          <CTableDataCell className="text-primary fw-bold small">{er.toFixed(2)}%</CTableDataCell>
+                          <CTableDataCell>
+                            <CButton
+                              color="link"
+                              className="text-danger p-0 fw-bold small text-decoration-none"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              삭제
+                            </CButton>
+                          </CTableDataCell>
+                        </CTableRow>
+                      )
+                    })}
+                    {data.length === 0 && (
+                      <CTableRow>
+                        <CTableDataCell colSpan={12} className="py-4 text-muted small">
+                          등록된 원본 데이터가 존재하지 않습니다.
+                        </CTableDataCell>
+                      </CTableRow>
+                    )}
+                  </CTableBody>
+                </CTable>
+              </div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+        {/* Right Column: AI Insight Sidebar */}
+        <CCol xl={3} className="mb-4">
+          <CCard className="border-0 shadow-sm text-white h-100" style={{ background: 'linear-gradient(135deg, #1d2731, #0f171e)', minHeight: '300px' }}>
+            <CCardHeader className="border-0 pt-4 px-4 bg-transparent">
+              <h5 className="m-0 fw-bold">🤖 AI 스탠다드 분석</h5>
+              <span className="small text-white-50">글로벌 콘텐츠 마케팅 성과 진단</span>
+            </CCardHeader>
+            <CCardBody className="px-4 pb-4 d-flex flex-column justify-content-between">
+              <div>
+                <div className="p-3 rounded mb-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div className="fw-semibold text-warning small mb-1">📢 API 연결 대기 중</div>
+                  <p className="small text-white-50 m-0 leading-relaxed">
+                    여기에 OpenAI가 연결되면 글로벌 스탠다드에 맞춘 콘텐츠 피드백이 출력됩니다.
+                  </p>
+                </div>
+                <div className="p-3 rounded" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div className="fw-semibold text-info small mb-1">🎯 현재 권장 조치</div>
+                  <p className="small text-white-50 m-0 leading-relaxed">
+                    틱톡 플랫폼의 Arirakku 브랜드 챌린지 성과가 {avgER.toFixed(1)}%로 매우 높습니다. 틱톡 채널에 비디오 리소스를 더욱 확대 투자하는 것을 권장합니다.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-top border-secondary text-center small text-white-50">
+                Verbos Analytics Engine v1.0
+              </div>
             </CCardBody>
           </CCard>
         </CCol>
