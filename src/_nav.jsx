@@ -88,15 +88,9 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Amiko 플랫폼 관리',
-    to: '/amiko',
-    icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Arirakku 브랜드 관리',
-    to: '/arirakku',
-    icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
+    name: '마케팅 관리',
+    to: '/marketing',
+    icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
   },
   {
     component: CNavTitle,

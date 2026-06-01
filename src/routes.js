@@ -17,6 +17,7 @@ import React from 'react'
 
 // Dashboard
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
+const MarketingDashboard = React.lazy(() => import('./views/marketing/MarketingDashboard'))
 const Schedule = React.lazy(() => import('./views/schedule/Schedule'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
@@ -90,6 +91,7 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 export const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
+  { path: '/marketing', name: '마케팅 관리', element: MarketingDashboard },
   { path: '/schedule', name: '일정 및 할 일', element: Schedule },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
