@@ -93,20 +93,20 @@ const _nav = [
     icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
   },
   {
-    component: CNavItem,
-    name: '업무 관리 (칸반)',
-    to: '/tasks',
-    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
-  },
-  {
     component: CNavTitle,
     name: '일정 및 개인 관리',
   },
   {
     component: CNavItem,
-    name: '일정 및 할 일',
+    name: '일정 관리',
     to: '/schedule',
     icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: '할 일 관리',
+    to: '/todo',
+    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
   },
 ]
 
