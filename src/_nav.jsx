@@ -94,25 +94,13 @@ const _nav = [
   },
   {
     component: CNavTitle,
-    name: '운영 현황',
+    name: '할 일',
   },
   {
     component: CNavItem,
     name: '일정 및 할 일',
     to: '/schedule',
     icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: '물류 및 배송 트래킹',
-    to: '/tracking',
-    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: '고객 문의 내역',
-    to: '/queries',
-    icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
   },
 ]
 
