@@ -31,33 +31,7 @@ const MarketingDashboard = () => {
   const [activeKey, setActiveKey] = useState('original_sns')
 
   // =========================================================
-  // 1. 전달(Previous Month) 1일 ~ 말일 자동 계산 헬퍼
-  // =========================================================
-  const getPreviousMonthRange = () => {
-    const now = new Date()
-    // 현재 2026-06-01 기준 -> 전달은 5월 1일 ~ 5월 31일이 됨
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const prevMonthLast = new Date(now.getFullYear(), now.getMonth(), 0)
-
-    const formatDate = (date) => {
-      const yyyy = date.getFullYear()
-      const mm = String(date.getMonth() + 1).padStart(2, '0')
-      const dd = String(date.getDate()).padStart(2, '0')
-      return `${yyyy}-${mm}-${dd}`
-    }
-
-    return {
-      start: formatDate(prevMonth),
-      end: formatDate(prevMonthLast)
-    }
-  }
-
-  const defaultRange = getPreviousMonthRange()
-  const [startDate, setStartDate] = useState(defaultRange.start)
-  const [endDate, setEndDate] = useState(defaultRange.end)
-
-  // =========================================================
-  // 2. 사용자 오리지널 SNS계정 성과 분석표 실제 시드 데이터 세팅
+  // 1. 사용자 오리지널 SNS계정 성과 분석표 실제 시드 데이터 세팅
   // =========================================================
   const defaultSnsRecords = [
     {
@@ -368,6 +342,79 @@ const MarketingDashboard = () => {
 
   const [snsRecords, setSnsRecords] = useState(defaultSnsRecords)
 
+  const handleDeleteSnsRecord = (id) => {
+    if (window.confirm('정말 이 레코드를 삭제하시겠습니까?')) {
+      setSnsRecords(snsRecords.filter(item => item.id !== id))
+    }
+  }
+
+  // ==========================================
+  // 2. Date Parsing and Intelligent Range Engine
+  // ==========================================
+  
+  // Converts '4월' & '04월 12일' into standard ISO YYYY-MM-DD
+  const parseSnsDateToIso = (monthStr, dateStr) => {
+    if (!monthStr || !dateStr) return '2026-01-01'
+    try {
+      const m = parseInt(monthStr.replace(/[^0-9]/g, '')) || 1
+      const parts = dateStr.trim().split(/\s+/)
+      const dayPart = parts[parts.length - 1]
+      const d = parseInt(dayPart.replace(/[^0-9]/g, '')) || 1
+
+      const year = 2026 // Static year for standard demo synchronization
+      const mm = String(m).padStart(2, '0')
+      const dd = String(d).padStart(2, '0')
+      return `${year}-${mm}-${dd}`
+    } catch (e) {
+      return '2026-01-01'
+    }
+  }
+
+  // Calculate dynamic full range based on the loaded dataset (Resolves dynamic bounds error)
+  const getSnsDataDateRange = (records) => {
+    if (!records || records.length === 0) {
+      return { start: '2026-04-12', end: '2026-05-13' }
+    }
+    const parsedDates = records.map(item => parseSnsDateToIso(item.month, item.date)).sort()
+    return {
+      start: parsedDates[0],
+      end: parsedDates[parsedDates.length - 1]
+    }
+  }
+
+  const defaultRange = getSnsDataDateRange(defaultSnsRecords)
+  const [startDate, setStartDate] = useState(defaultRange.start)
+  const [endDate, setEndDate] = useState(defaultRange.end)
+
+  // Sync datepicker bounds automatically when snsRecords load or reset (Resolves the 2-data-only bug)
+  useEffect(() => {
+    const range = getSnsDataDateRange(snsRecords)
+    setStartDate(range.start)
+    setEndDate(range.end)
+  }, [snsRecords])
+
+  // Dynamic filter binder
+  const filteredSnsRecords = snsRecords.filter(item => {
+    const itemIso = parseSnsDateToIso(item.month, item.date)
+    return itemIso >= startDate && itemIso <= endDate
+  })
+
+  // Format YYYY-MM-DD back to Korean date strings for top badges
+  const get집계기간 = () => {
+    const formatIso = (isoStr) => {
+      if (!isoStr) return ''
+      const parts = isoStr.split('-')
+      return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`
+    }
+    return `${formatIso(startDate)} ~ ${formatIso(endDate)}`
+  }
+
+  const handleResetToFullRange = () => {
+    const range = getSnsDataDateRange(snsRecords)
+    setStartDate(range.start)
+    setEndDate(range.end)
+  }
+
   // ==========================================
   // 3. 다른 샌드박스 템플릿용 기존 States
   // ==========================================
@@ -453,12 +500,6 @@ const MarketingDashboard = () => {
     }
     setUtmRecords([newRecord, ...utmRecords])
     alert('새 UTM 캠페인이 하단 트래커 표에 등록되었습니다!')
-  }
-
-  const handleDeleteSnsRecord = (id) => {
-    if (confirm('해당 성과 기록을 정말 삭제하시겠습니까?')) {
-      setSnsRecords(snsRecords.filter(item => item.id !== id))
-    }
   }
 
   // ==========================================
@@ -600,47 +641,8 @@ const MarketingDashboard = () => {
   }
 
   // ==========================================
-  // 5. Date Parsing and Filtering Core Engine
+  // 5. Dynamic Calculations Core Engine
   // ==========================================
-  
-  // Converts '04월 12일' and '4월' to a standard 'YYYY-MM-DD' for solid comparison
-  const parseSnsDateToIso = (monthStr, dateStr) => {
-    if (!monthStr || !dateStr) return '2026-01-01'
-    try {
-      const m = parseInt(monthStr.replace(/[^0-9]/g, '')) || 1
-      const parts = dateStr.trim().split(/\s+/)
-      const dayPart = parts[parts.length - 1]
-      const d = parseInt(dayPart.replace(/[^0-9]/g, '')) || 1
-
-      const year = 2026 // Standard static year for demo sync
-      const mm = String(m).padStart(2, '0')
-      const dd = String(d).padStart(2, '0')
-      return `${year}-${mm}-${dd}`
-    } catch (e) {
-      return '2026-01-01'
-    }
-  }
-
-  // Dynamic filter binder
-  const filteredSnsRecords = snsRecords.filter(item => {
-    const itemIso = parseSnsDateToIso(item.month, item.date)
-    return itemIso >= startDate && itemIso <= endDate
-  })
-
-  // Format YYYY-MM-DD back to readable Korean dates for UI headers
-  const get집계기간 = () => {
-    const formatIso = (isoStr) => {
-      if (!isoStr) return ''
-      const parts = isoStr.split('-')
-      return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`
-    }
-    return `${formatIso(startDate)} ~ ${formatIso(endDate)}`
-  }
-
-  const handleResetToPrevMonth = () => {
-    setStartDate(defaultRange.start)
-    setEndDate(defaultRange.end)
-  }
 
   // Scorecards logic: Instagram + TikTok summaries based on dynamic FILTERED records
   const getCoreMetrics = () => {
@@ -702,7 +704,7 @@ const MarketingDashboard = () => {
         <div className="p-3 rounded mb-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div className="fw-semibold text-success small mb-1">📊 채널 점유율 및 성비 요약</div>
           <p className="small text-white-50 m-0 leading-relaxed">
-            해당 기간 유저층 분석 결과, 인스타의 주요 유저층은 <strong>여성(평균 88% 이상)</strong>이며 <strong>25-34 연령대</strong>가 최대 핵심 기여 오디언스입니다.
+            인스타그램 릴스가 전체 누적 조회수의 약 60%를 주도하고 있습니다. 주요 오디언스 핵심층은 <strong>여성(평균 88% 이상)</strong>이며 <strong>25-34 연령대</strong>가 최대 핵심 기여 오디언스입니다.
           </p>
         </div>
       </>
@@ -710,60 +712,81 @@ const MarketingDashboard = () => {
   }
 
   // =========================================================
-  // 6. 월별 총합 조회수 롤업(Roll-up) 및 ApexCharts 연동 로직 (FILTERED)
+  // 6. 게시글별 틱톡-인스타 주요 지표 전환형 막대차트(Grouped Bar) 로직
   // =========================================================
-  const getMonthlyRollupData = () => {
-    const rollupMap = {}
-    filteredSnsRecords.forEach(item => {
-      const m = item.month
-      if (!rollupMap[m]) {
-        rollupMap[m] = { month: m, instaViews: 0, tiktokViews: 0 }
-      }
-      rollupMap[m].instaViews += item.insta.views
-      rollupMap[m].tiktokViews += item.tiktok.views
-    })
-    
-    const sortedKeys = Object.keys(rollupMap).sort((a, b) => {
-      const numA = parseInt(a) || 0
-      const numB = parseInt(b) || 0
-      return numA - numB
-    })
-    
-    return sortedKeys.map(k => rollupMap[k])
-  }
+  
+  // Chart toggle state: 'views' | 'likes' | 'follows'
+  const [activeChartMetric, setActiveChartMetric] = useState('views')
 
-  const rollupData = getMonthlyRollupData()
-  const chartMonths = rollupData.map(item => item.month)
-  const chartInstaViews = rollupData.map(item => item.instaViews)
-  const chartTiktokViews = rollupData.map(item => item.tiktokViews)
+  // Generate dynamic labels (date + topic) e.g., '04/12(정보)'
+  const chartLabels = filteredSnsRecords.map(item => {
+    const cleanDate = item.date.replace(/월\s*/, '/').replace(/일\s*/, '')
+    return `${cleanDate}(${item.topic})`
+  })
 
-  const snsChartOptions = {
-    chart: {
-      id: 'sns-account-comparison',
-      toolbar: { show: false }
-    },
-    stroke: {
-      width: [3, 3],
-      curve: 'smooth'
-    },
-    colors: ['#e1306c', '#000000'],
-    labels: chartMonths,
-    xaxis: {
-      type: 'category'
-    },
-    yaxis: {
-      title: { text: '설정 기간 월간 누적 조회수 ($)' },
-      labels: { formatter: (value) => value.toLocaleString() }
-    },
-    tooltip: {
-      shared: true
+  // Switch bar series data based on chosen toggle
+  const getChartSeries = () => {
+    if (activeChartMetric === 'views') {
+      return [
+        { name: '인스타그램 조회수', data: filteredSnsRecords.map(item => item.insta.views) },
+        { name: '틱톡 조회수', data: filteredSnsRecords.map(item => item.tiktok.views) }
+      ]
+    } else if (activeChartMetric === 'likes') {
+      return [
+        { name: '인스타그램 좋아요', data: filteredSnsRecords.map(item => item.insta.likes) },
+        { name: '틱톡 좋아요', data: filteredSnsRecords.map(item => item.tiktok.likes) }
+      ]
+    } else {
+      // follows
+      return [
+        { name: '인스타그램 팔로우', data: filteredSnsRecords.map(item => item.insta.follow) },
+        { name: '틱톡 팔로우', data: filteredSnsRecords.map(item => item.tiktok.follow) }
+      ]
     }
   }
 
-  const snsChartSeries = [
-    { name: '인스타그램 총 조회수', data: chartInstaViews },
-    { name: '틱톡 총 조회수', data: chartTiktokViews }
-  ]
+  const snsChartSeries = getChartSeries()
+
+  const snsChartOptions = {
+    chart: {
+      id: 'sns-post-comparison',
+      type: 'bar',
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '50%',
+        endingShape: 'rounded'
+      }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent']
+    },
+    colors: ['#e1306c', '#000000'], // Instagram Pink vs TikTok Black
+    xaxis: {
+      categories: chartLabels
+    },
+    yaxis: {
+      title: {
+        text: activeChartMetric === 'views' ? '조회수 (회)' : activeChartMetric === 'likes' ? '좋아요 반응수 (건)' : '팔로우 전환수 (명)'
+      },
+      labels: { formatter: (value) => Math.round(value).toLocaleString() }
+    },
+    fill: {
+      opacity: 1
+    },
+    tooltip: {
+      y: {
+        formatter: (val) => `${Math.round(val).toLocaleString()}`
+      }
+    }
+  }
 
   // Dynamic Rowspan Helper for month cell merge (based on FILTERED records)
   const renderMonthCell = (record, index) => {
@@ -790,7 +813,7 @@ const MarketingDashboard = () => {
 
   return (
     <>
-      {/* 📅 대시보드 메인 날짜 필터 영역 (Meta Business Suite 세련된 이식) */}
+      {/* 📅 대시보드 메인 날짜 필터 영역 (지능형 디폴트 자동 바인딩으로 데이터 누락 완벽 해결) */}
       <div className="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border flex-wrap gap-3">
         <div className="d-flex align-items-center flex-wrap gap-2">
           <span className="fs-5 me-2">📅</span>
@@ -819,9 +842,9 @@ const MarketingDashboard = () => {
             size="sm"
             className="fw-bold ms-2 px-3"
             style={{ fontSize: '11px' }}
-            onClick={handleResetToPrevMonth}
+            onClick={handleResetToFullRange}
           >
-            기본값 복원 (전달 1일~말일)
+            전체 기간 데이터 보기 (최소~최대일 자동 세팅)
           </CButton>
         </div>
         
@@ -842,14 +865,14 @@ const MarketingDashboard = () => {
             <CCardBody className="pb-4 px-4 pt-4">
               <div className="small text-white-50 fw-semibold text-uppercase">기간 통합 총 조회수</div>
               <div className="fs-2 fw-bold mt-2">{snsMetrics.totalViews.toLocaleString()} 회</div>
-              <div className="small text-white-50 mt-3">지정 날짜 범위 내 누적 모수</div>
+              <div className="small text-white-50 mt-3">인스타그램 & 틱톡 합산 누적 도달</div>
             </CCardBody>
           </CCard>
         </CCol>
         <CCol sm={6} xl={3}>
           <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #e1306c, #a81c4e)' }}>
             <CCardBody className="pb-4 px-4 pt-4">
-              <div className="small text-white-50 fw-semibold text-uppercase">기간 누적 총 인게이지먼트</div>
+              <div className="small text-white-50 fw-semibold text-uppercase">기간 누적 총 반응수</div>
               <div className="fs-2 fw-bold mt-2">{snsMetrics.totalLikes.toLocaleString()} 건</div>
               <div className="small text-white-50 mt-3">범위 내 소셜 인터랙션 반응수</div>
             </CCardBody>
@@ -869,7 +892,7 @@ const MarketingDashboard = () => {
             <CCardBody className="pb-4 px-4 pt-4">
               <div className="small text-white-50 fw-semibold text-uppercase">기간 광고 지출액</div>
               <div className="fs-2 fw-bold mt-2">₩{snsMetrics.totalSpent.toLocaleString()}</div>
-              <div className="small text-white-50 mt-3">설정 범위 내 인스타 타겟 광고비</div>
+              <div className="small text-white-50 mt-3">설정 범위 내 누적 타겟 광고비</div>
             </CCardBody>
           </CCard>
         </CCol>
@@ -947,21 +970,56 @@ const MarketingDashboard = () => {
                   <CRow className="mb-4">
                     <CCol lg={12} className="mb-4">
                       <div className="p-3 bg-light rounded border">
-                        <div className="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                        
+                        {/* Interactive Grouped Bar Chart Header with Metric Selector */}
+                        <div className="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-2">
                           <div>
-                            <h6 className="fw-bold text-dark mb-1">📈 인스타그램 vs 틱톡 월간 누적 조회수 합산 트렌드 (설정 범위 집계)</h6>
-                            <span className="small text-muted">선택하신 날짜 범위 내에서 채널별 총합 조회수 추이를 자동으로 시각화합니다.</span>
+                            <h6 className="fw-bold text-dark mb-1">📊 게시글별 인스타그램 vs 틱톡 성과 대조 (다중 막대 그래프)</h6>
+                            <span className="small text-muted">선택한 날짜 범위 내의 각 소셜 게시물별 성과를 정밀 비교 대조합니다.</span>
                           </div>
+                          
+                          {/* Segment Toggles */}
+                          <div className="d-flex gap-1 bg-white p-1 rounded border shadow-sm" style={{ fontSize: '11px' }}>
+                            <CButton
+                              size="sm"
+                              color={activeChartMetric === 'views' ? 'primary' : 'light'}
+                              className={`fw-bold px-3 py-1 ${activeChartMetric === 'views' ? 'text-white' : 'text-muted'}`}
+                              onClick={() => setActiveChartMetric('views')}
+                            >
+                              조회수 대조
+                            </CButton>
+                            <CButton
+                              size="sm"
+                              color={activeChartMetric === 'likes' ? 'primary' : 'light'}
+                              className={`fw-bold px-3 py-1 ${activeChartMetric === 'likes' ? 'text-white' : 'text-muted'}`}
+                              onClick={() => setActiveChartMetric('likes')}
+                            >
+                              반응수(좋아요) 대조
+                            </CButton>
+                            <CButton
+                              size="sm"
+                              color={activeChartMetric === 'follows' ? 'primary' : 'light'}
+                              className={`fw-bold px-3 py-1 ${activeChartMetric === 'follows' ? 'text-white' : 'text-muted'}`}
+                              onClick={() => setActiveChartMetric('follows')}
+                            >
+                              팔로우수 대조
+                            </CButton>
+                          </div>
+                        </div>
+
+                        {/* Export Button bar */}
+                        <div className="text-end mb-2">
                           <CButton color="outline-primary" size="sm" className="fw-bold shadow-sm" onClick={handleExportToExcel}>
                             📥 엑셀로 내보내기 (서식 완벽 호환)
                           </CButton>
                         </div>
+
                         {filteredSnsRecords.length > 0 ? (
                           <Chart
                             options={snsChartOptions}
                             series={snsChartSeries}
-                            type="line"
-                            height={240}
+                            type="bar"
+                            height={250}
                           />
                         ) : (
                           <div className="py-5 text-center text-muted small bg-white rounded border">
