@@ -5,20 +5,19 @@ import {
   CCardHeader,
   CCol,
   CRow,
-  CFormInput,
-  CFormSelect,
-  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CButton,
 } from '@coreui/react'
 import Chart from 'react-apexcharts'
+import * as XLSX from 'xlsx'
 
 const Dashboard = () => {
-  // Highly realistic pre-loaded mock data (May/June 2026)
+  // Highly realistic pre-loaded mock data
   const [data, setData] = useState([
     {
       id: 1,
@@ -87,51 +86,85 @@ const Dashboard = () => {
     },
   ])
 
-  // Form input states
-  const [formDate, setFormDate] = useState('')
-  const [formChannel, setFormChannel] = useState('인스타그램')
-  const [formTopic, setFormTopic] = useState('')
-  const [formReach, setFormReach] = useState('')
-  const [formLikes, setFormLikes] = useState('')
-  const [formComments, setFormComments] = useState('')
-  const [formSaves, setFormSaves] = useState('')
-  const [formShares, setFormShares] = useState('')
-  const [formClicks, setFormClicks] = useState('')
-  const [formCountry, setFormCountry] = useState('한국')
+  // File upload and SheetJS parser logic
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
 
-  // Save new record
-  const handleSave = (e) => {
-    e.preventDefault()
-    if (!formDate || !formTopic || !formReach) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target.result
+        const wb = XLSX.read(bstr, { type: 'binary' })
+        const wsname = wb.SheetNames[0]
+        const ws = wb.Sheets[wsname]
+        const rawJson = XLSX.utils.sheet_to_json(ws)
 
-    const newRecord = {
-      id: data.length + 1,
-      date: formDate,
-      channel: formChannel,
-      topic: formTopic,
-      reach: parseInt(formReach) || 0,
-      likes: parseInt(formLikes) || 0,
-      comments: parseInt(formComments) || 0,
-      saves: parseInt(formSaves) || 0,
-      shares: parseInt(formShares) || 0,
-      clicks: parseInt(formClicks) || 0,
-      country: formCountry,
+        if (rawJson.length === 0) {
+          alert('엑셀 파일에 데이터가 비어 있습니다.')
+          return
+        }
+
+        // Robust column mapping helper for flexible header synonyms
+        const findKey = (row, possibilities) => {
+          const keyFound = Object.keys(row).find((k) =>
+            possibilities.some(
+              (p) =>
+                k.toLowerCase().replace(/[\s_]+/g, '') === p.toLowerCase().replace(/[\s_]+/g, '')
+            )
+          )
+          return keyFound ? row[keyFound] : null
+        }
+
+        // Convert parsed rows to schema
+        const parsedRecords = rawJson.map((row, idx) => {
+          const dateRaw = findKey(row, ['게시일', '날짜', 'date', 'pubdate', 'timestamp']) || new Date().toISOString().split('T')[0]
+          
+          let dateStr = String(dateRaw)
+          // Handle Excel numeric date serials
+          if (typeof dateRaw === 'number') {
+            const excelEpoch = new Date(Date.UTC(1899, 11, 30))
+            const calculatedDate = new Date(excelEpoch.getTime() + dateRaw * 24 * 60 * 60 * 1000)
+            if (!isNaN(calculatedDate)) {
+              dateStr = calculatedDate.toISOString().split('T')[0]
+            }
+          }
+
+          const channel = findKey(row, ['채널', 'platform', 'channel', '플랫폼', 'sns']) || '인스타그램'
+          const topic = findKey(row, ['주제', '제목', 'topic', 'title', 'content', '콘텐츠']) || '소셜 콘텐츠'
+          const reach = parseInt(findKey(row, ['도달수', '도달', '조회수', '조회', 'reach', 'views', 'view'])) || 0
+          const likes = parseInt(findKey(row, ['좋아요', '좋아요수', 'likes', 'like'])) || 0
+          const comments = parseInt(findKey(row, ['댓글', '댓글수', 'comments', 'comment'])) || 0
+          const saves = parseInt(findKey(row, ['저장', '저장수', 'saves', 'save'])) || 0
+          const shares = parseInt(findKey(row, ['공유', '공유수', 'shares', 'share'])) || 0
+          const clicks = parseInt(findKey(row, ['클릭수', '클릭', '링크클릭', 'clicks', 'click'])) || 0
+          const country = findKey(row, ['국가', '주요국가', 'country', 'region', '타깃국가']) || '한국'
+
+          return {
+            id: idx + 1,
+            date: dateStr,
+            channel,
+            topic,
+            reach,
+            likes,
+            comments,
+            saves,
+            shares,
+            clicks,
+            country,
+          }
+        })
+
+        setData(parsedRecords)
+      } catch (error) {
+        console.error(error)
+        alert('파일을 파싱하는 동안 오류가 발생했습니다. 헤더명이나 파일 형식을 확인해 주세요.')
+      }
     }
-
-    setData([...data, newRecord])
-
-    // Reset inputs
-    setFormDate('')
-    setFormTopic('')
-    setFormReach('')
-    setFormLikes('')
-    setFormComments('')
-    setFormSaves('')
-    setFormShares('')
-    setFormClicks('')
+    reader.readAsBinaryString(file)
   }
 
-  // Delete a record
+  // Delete a record from active state list
   const handleDelete = (id) => {
     setData(data.filter((item) => item.id !== id))
   }
@@ -162,7 +195,6 @@ const Dashboard = () => {
   })
 
   // --- ApexCharts Data Structuring ---
-  // Chart A: Reach vs Engagement Mixed Chart
   const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date))
   const chartDates = sortedData.map((item) => item.date)
   const chartReachData = sortedData.map((item) => item.reach)
@@ -338,124 +370,33 @@ const Dashboard = () => {
         </CCol>
       </CRow>
 
-      {/* 3. Input Form & Excel Table Area */}
+      {/* 3. Excel File Upload & Data Table Area */}
       <CRow>
-        {/* Left/Main Column: Input & Table */}
         <CCol xl={9} className="mb-4">
-          {/* Input Form Card */}
+          {/* File Upload Card */}
           <CCard className="border-0 shadow-sm mb-4">
             <CCardHeader className="bg-white border-0 pt-4 px-4">
-              <h5 className="m-0 fw-bold text-dark">SNS 성과 데이터 입력 (실시간 대시보드 연동)</h5>
-              <span className="small text-muted">새로운 소셜 지표를 입력하면 차트와 최상단 KPI 위젯이 즉각 업데이트됩니다.</span>
+              <h5 className="m-0 fw-bold text-dark">SNS 성과 엑셀/CSV 자동 업로드</h5>
+              <span className="small text-muted">엑셀(.xlsx, .xls) 또는 CSV 파일을 업로드하면 대시보드가 실시간으로 자동 갱신됩니다.</span>
             </CCardHeader>
             <CCardBody className="px-4 pb-4">
-              <form onSubmit={handleSave}>
-                <CRow className="g-3">
-                  <CCol md={3}>
-                    <label className="form-label small fw-semibold text-secondary">게시일</label>
-                    <CFormInput
-                      type="date"
-                      value={formDate}
-                      onChange={(e) => setFormDate(e.target.value)}
-                      required
-                    />
-                  </CCol>
-                  <CCol md={3}>
-                    <label className="form-label small fw-semibold text-secondary">채널</label>
-                    <CFormSelect
-                      value={formChannel}
-                      onChange={(e) => setFormChannel(e.target.value)}
-                    >
-                      <option value="인스타그램">인스타그램 (Instagram)</option>
-                      <option value="틱톡">틱톡 (TikTok)</option>
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={6}>
-                    <label className="form-label small fw-semibold text-secondary">콘텐츠 주제</label>
-                    <CFormInput
-                      placeholder="예: Arirakku 하계 컬렉션 코디 추천"
-                      value={formTopic}
-                      onChange={(e) => setFormTopic(e.target.value)}
-                      required
-                    />
-                  </CCol>
-
-                  <CCol xs={6} sm={4} md={2.4}>
-                    <label className="form-label small fw-semibold text-secondary">도달수(조회수)</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formReach}
-                      onChange={(e) => setFormReach(e.target.value)}
-                      required
-                    />
-                  </CCol>
-                  <CCol xs={6} sm={4} md={2.4}>
-                    <label className="form-label small fw-semibold text-secondary">좋아요</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formLikes}
-                      onChange={(e) => setFormLikes(e.target.value)}
-                    />
-                  </CCol>
-                  <CCol xs={6} sm={4} md={2.4}>
-                    <label className="form-label small fw-semibold text-secondary">댓글수</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formComments}
-                      onChange={(e) => setFormComments(e.target.value)}
-                    />
-                  </CCol>
-                  <CCol xs={6} sm={4} md={2.4}>
-                    <label className="form-label small fw-semibold text-secondary">저장수</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formSaves}
-                      onChange={(e) => setFormSaves(e.target.value)}
-                    />
-                  </CCol>
-                  <CCol xs={6} sm={4} md={2.4}>
-                    <label className="form-label small fw-semibold text-secondary">공유수</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formShares}
-                      onChange={(e) => setFormShares(e.target.value)}
-                    />
-                  </CCol>
-
-                  <CCol md={3}>
-                    <label className="form-label small fw-semibold text-secondary">주요 국가</label>
-                    <CFormSelect
-                      value={formCountry}
-                      onChange={(e) => setFormCountry(e.target.value)}
-                    >
-                      <option value="한국">한국</option>
-                      <option value="미국">미국</option>
-                      <option value="일본">일본</option>
-                      <option value="베트남">베트남</option>
-                      <option value="인도네시아">인도네시아</option>
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <label className="form-label small fw-semibold text-secondary">링크 클릭수</label>
-                    <CFormInput
-                      type="number"
-                      placeholder="0"
-                      value={formClicks}
-                      onChange={(e) => setFormClicks(e.target.value)}
-                    />
-                  </CCol>
-                  <CCol md={6} className="d-flex align-items-end">
-                    <CButton type="submit" color="primary" className="w-100 fw-bold text-white py-2">
-                      새 성과 데이터 저장
-                    </CButton>
-                  </CCol>
-                </CRow>
-              </form>
+              <div className="p-4 rounded border-2 border-dashed border-primary text-center bg-light">
+                <div className="mb-3">
+                  <span className="fs-3">📊</span>
+                </div>
+                <h6 className="fw-semibold text-dark mb-2">성과 지표 시트 파일 선택</h6>
+                <p className="small text-muted mb-3">지원 파일 형식: .xlsx, .xls, .csv (필수 열: 게시일, 채널, 주제, 도달수, 좋아요, 댓글 등)</p>
+                <div className="d-inline-block">
+                  <input
+                    type="file"
+                    id="excelUpload"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleFileUpload}
+                    className="form-control"
+                    style={{ maxWidth: '350px' }}
+                  />
+                </div>
+              </div>
             </CCardBody>
           </CCard>
 
