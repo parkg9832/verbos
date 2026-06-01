@@ -38,6 +38,28 @@ import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/inde
 const DefaultLayout = () => {
   return (
     <div>
+      <style>{`
+        /* Force container stretching to eliminate invisible boxes on desktop */
+        .body,
+        .wrapper,
+        .container-fluid,
+        .container-lg,
+        .container {
+          max-width: 100% !important;
+          width: 100% !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+        .px-4 {
+          padding-left: 1.5rem !important;
+          padding-right: 1.5rem !important;
+        }
+        .body {
+          padding: 1.5rem !important;
+        }
+      `}</style>
       <AppSidebar />
       <div className="wrapper d-flex flex-column min-vh-100">
         <AppHeader />
