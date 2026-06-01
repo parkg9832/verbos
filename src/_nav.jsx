@@ -15,6 +15,7 @@ import CIcon from '@coreui/icons-react'
 import {
   cilBell,
   cilCalculator,
+  cilCalendar,
   cilChartPie,
   cilCursor,
   cilDescription,
@@ -100,6 +101,12 @@ const _nav = [
   {
     component: CNavTitle,
     name: '운영 현황',
+  },
+  {
+    component: CNavItem,
+    name: '일정 및 할 일',
+    to: '/schedule',
+    icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,
