@@ -1293,23 +1293,41 @@ const MarketingDashboard = () => {
     return `${cleanDate}(${item.topic})`
   })
 
-  // Switch bar series data based on chosen toggle
+  // Dynamic outlier compression engine to prevent viral peaks from flattening other posts
+  const getCompressedValue = (val, metric) => {
+    if (metric === 'views') {
+      const threshold = 15000
+      if (val <= threshold) return val
+      return threshold + (val - threshold) * 0.05
+    } else if (metric === 'likes') {
+      const threshold = 1500
+      if (val <= threshold) return val
+      return threshold + (val - threshold) * 0.1
+    } else {
+      // follows
+      const threshold = 150
+      if (val <= threshold) return val
+      return threshold + (val - threshold) * 0.1
+    }
+  }
+
+  // Switch bar series data based on chosen toggle (with visual calibration)
   const getChartSeries = () => {
     if (activeChartMetric === 'views') {
       return [
-        { name: '인스타그램 조회수', data: filteredSnsRecords.map(item => item.insta.views) },
-        { name: '틱톡 조회수', data: filteredSnsRecords.map(item => item.tiktok.views) }
+        { name: '인스타그램 조회수', data: filteredSnsRecords.map(item => getCompressedValue(item.insta.views, 'views')) },
+        { name: '틱톡 조회수', data: filteredSnsRecords.map(item => getCompressedValue(item.tiktok.views, 'views')) }
       ]
     } else if (activeChartMetric === 'likes') {
       return [
-        { name: '인스타그램 좋아요', data: filteredSnsRecords.map(item => item.insta.likes) },
-        { name: '틱톡 좋아요', data: filteredSnsRecords.map(item => item.tiktok.likes) }
+        { name: '인스타그램 좋아요', data: filteredSnsRecords.map(item => getCompressedValue(item.insta.likes, 'likes')) },
+        { name: '틱톡 좋아요', data: filteredSnsRecords.map(item => getCompressedValue(item.tiktok.likes, 'likes')) }
       ]
     } else {
       // follows
       return [
-        { name: '인스타그램 팔로우', data: filteredSnsRecords.map(item => item.insta.follow) },
-        { name: '틱톡 팔로우', data: filteredSnsRecords.map(item => item.tiktok.follow) }
+        { name: '인스타그램 팔로우', data: filteredSnsRecords.map(item => getCompressedValue(item.insta.follow, 'follows')) },
+        { name: '틱톡 팔로우', data: filteredSnsRecords.map(item => getCompressedValue(item.tiktok.follow, 'follows')) }
       ]
     }
   }
@@ -1343,16 +1361,45 @@ const MarketingDashboard = () => {
     },
     yaxis: {
       title: {
-        text: activeChartMetric === 'views' ? '조회수 (회)' : activeChartMetric === 'likes' ? '좋아요 반응수 (건)' : '팔로우 전환수 (명)'
+        text: activeChartMetric === 'views' ? '조회수 (회, 보정 스케일)' : activeChartMetric === 'likes' ? '좋아요 반응수 (건, 보정 스케일)' : '팔로우 전환수 (명, 보정 스케일)'
       },
-      labels: { formatter: (value) => Math.round(value).toLocaleString() }
+      labels: {
+        formatter: (value) => {
+          let threshold = 15000
+          let ratio = 0.05
+          if (activeChartMetric === 'likes') {
+            threshold = 1500
+            ratio = 0.1
+          } else if (activeChartMetric === 'follows') {
+            threshold = 150
+            ratio = 0.1
+          }
+
+          if (value <= threshold) return Math.round(value).toLocaleString()
+          const originalVal = threshold + (value - threshold) / ratio
+          return Math.round(originalVal).toLocaleString() + '+'
+        }
+      }
     },
     fill: {
       opacity: 1
     },
     tooltip: {
       y: {
-        formatter: (val) => `${Math.round(val).toLocaleString()}`
+        formatter: (val, { seriesIndex, dataPointIndex }) => {
+          const item = filteredSnsRecords[dataPointIndex]
+          if (!item) return Math.round(val).toLocaleString()
+
+          let realVal = 0
+          if (activeChartMetric === 'views') {
+            realVal = seriesIndex === 0 ? item.insta.views : item.tiktok.views
+          } else if (activeChartMetric === 'likes') {
+            realVal = seriesIndex === 0 ? item.insta.likes : item.tiktok.likes
+          } else {
+            realVal = seriesIndex === 0 ? item.insta.follow : item.tiktok.follow
+          }
+          return `${realVal.toLocaleString()} (실제 성과)`
+        }
       }
     }
   }
