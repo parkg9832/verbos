@@ -22,8 +22,6 @@ import {
   CFormSelect,
   CBadge,
   CProgress,
-  CInputGroup,
-  CInputGroupText,
 } from '@coreui/react'
 import Chart from 'react-apexcharts'
 import * as XLSX from 'xlsx'
@@ -431,73 +429,6 @@ const MarketingDashboard = () => {
     alert('새 UTM 캠페인이 하단 트래커 표에 등록되었습니다!')
   }
 
-  // ==========================================
-  // 3. SNS계정 성과 분석 추가 / 편집 CRUD 기능
-  // ==========================================
-  const [snsMonth, setSnsMonth] = useState('5월')
-  const [snsDate, setSnsDate] = useState('05월 18일')
-  const [snsType, setSnsType] = useState('릴스')
-  const [snsFormat, setSnsFormat] = useState('영상')
-  const [snsTopic, setSnsTopic] = useState('유머')
-  const [snsAds, setSnsAds] = useState('x')
-
-  // SNS 인스타그램 간편 데이터 바인딩
-  const [instaViews, setInstaViews] = useState(0)
-  const [instaReach, setInstaReach] = useState(0)
-  const [instaLikes, setInstaLikes] = useState(0)
-  const [instaComments, setInstaComments] = useState(0)
-  const [instaSpent, setInstaSpent] = useState(0)
-  
-  // SNS 틱톡 간편 데이터 바인딩
-  const [tiktokViews, setTiktokViews] = useState(0)
-  const [tiktokReach, setTiktokReach] = useState(0)
-  const [tiktokLikes, setTiktokLikes] = useState(0)
-
-  const handleAddSnsRecord = () => {
-    const nextNum = snsRecords.filter(item => item.month === snsMonth).length + 1
-    const newRecord = {
-      id: Date.now(),
-      month: snsMonth,
-      num: nextNum,
-      date: snsDate,
-      type: snsType,
-      format: snsFormat,
-      topic: snsTopic,
-      ads: snsAds,
-      insta: {
-        views: parseInt(instaViews) || 0,
-        reach: parseInt(instaReach) || 0,
-        likes: parseInt(instaLikes) || 0,
-        comments: parseInt(instaComments) || 0,
-        saves: 0,
-        shares: 0,
-        profile: 0,
-        site: 0,
-        follow: 0,
-        spent: parseInt(instaSpent) || 0,
-        costPerGoal: 0,
-        gender: { male: 15, female: 85 },
-        countries: [],
-        age: { '18-24': 20, '25-34': 50, '35-44': 20, '45-54': 8, '55+': 2 }
-      },
-      tiktok: {
-        reach: parseInt(tiktokReach) || 0,
-        views: parseInt(tiktokViews) || 0,
-        likes: parseInt(tiktokLikes) || 0,
-        comments: 0,
-        shares: 0,
-        saves: 0,
-        follow: 0,
-        gender: { male: 15, female: 85 },
-        countries: [],
-        age: { '18-24': 20, '25-34': 50, '35-44': 20, '45-54': 8, '55+': 2 }
-      }
-    }
-
-    setSnsRecords([...snsRecords, newRecord])
-    alert('새로운 SNS 성과 레코드가 분석표 최하단에 주입되었습니다!')
-  }
-
   const handleDeleteSnsRecord = (id) => {
     if (confirm('해당 성과 기록을 정말 삭제하시겠습니까?')) {
       setSnsRecords(snsRecords.filter(item => item.id !== id))
@@ -643,8 +574,22 @@ const MarketingDashboard = () => {
   }
 
   // ==========================================
-  // 5. Dynamic Calculations based on active tab
+  // 5. Dynamic Calculations & Meta Period Tags
   // ==========================================
+
+  // Dynamic analysis period calculations
+  const get집계기간 = () => {
+    if (snsRecords.length === 0) return '등록된 데이터 없음'
+    const sorted = [...snsRecords].sort((a, b) => {
+      const dayA = parseInt(a.date.replace(/[^0-9]/g, '')) || 0
+      const dayB = parseInt(b.date.replace(/[^0-9]/g, '')) || 0
+      return dayA - dayB
+    })
+    const firstDate = sorted[0].date
+    const lastDate = sorted[sorted.length - 1].date
+    const months = Array.from(new Set(snsRecords.map(r => r.month))).join(', ')
+    return `2026. ${firstDate} ~ ${lastDate} (${months} 기여 성과 집계)`
+  }
 
   // Scorecards logic: Instagram + TikTok summaries
   const getCoreMetrics = () => {
@@ -677,7 +622,6 @@ const MarketingDashboard = () => {
   // Real-time calculated AI Insights based on user original sheet
   const renderOriginalSnsAiInsights = () => {
     let topContent = { date: '-', views: 0, platform: '-' }
-    let worstContent = { date: '-', views: 99999, platform: '-' }
 
     snsRecords.forEach(item => {
       if (item.insta.views > topContent.views) {
@@ -685,10 +629,6 @@ const MarketingDashboard = () => {
       }
       if (item.tiktok.views > topContent.views) {
         topContent = { date: item.date, views: item.tiktok.views, platform: '틱톡 비디오', topic: item.topic }
-      }
-
-      if (item.insta.views > 0 && item.insta.views < worstContent.views) {
-        worstContent = { date: item.date, views: item.insta.views, platform: '인스타그램', topic: item.topic }
       }
     })
 
@@ -716,12 +656,34 @@ const MarketingDashboard = () => {
     )
   }
 
-  // ==========================================
-  // 6. Dynamic Chart Configuration
-  // ==========================================
-  const chartDates = snsRecords.map(item => item.date)
-  const chartInstaViews = snsRecords.map(item => item.insta.views)
-  const chartTiktokViews = snsRecords.map(item => item.tiktok.views)
+  // =========================================================
+  // 6. 월별 총합 조회수 롤업(Roll-up) 및 ApexCharts 연동 로직
+  // =========================================================
+  const getMonthlyRollupData = () => {
+    const rollupMap = {}
+    snsRecords.forEach(item => {
+      const m = item.month // '4월', '5월' ...
+      if (!rollupMap[m]) {
+        rollupMap[m] = { month: m, instaViews: 0, tiktokViews: 0 }
+      }
+      rollupMap[m].instaViews += item.insta.views
+      rollupMap[m].tiktokViews += item.tiktok.views
+    })
+    
+    // Sort keys based on numeric month sequence
+    const sortedKeys = Object.keys(rollupMap).sort((a, b) => {
+      const numA = parseInt(a) || 0
+      const numB = parseInt(b) || 0
+      return numA - numB
+    })
+    
+    return sortedKeys.map(k => rollupMap[k])
+  }
+
+  const rollupData = getMonthlyRollupData()
+  const chartMonths = rollupData.map(item => item.month)
+  const chartInstaViews = rollupData.map(item => item.instaViews)
+  const chartTiktokViews = rollupData.map(item => item.tiktokViews)
 
   const snsChartOptions = {
     chart: {
@@ -733,12 +695,12 @@ const MarketingDashboard = () => {
       curve: 'smooth'
     },
     colors: ['#e1306c', '#000000'], // Instagram pink vs TikTok black
-    labels: chartDates,
+    labels: chartMonths,
     xaxis: {
       type: 'category'
     },
     yaxis: {
-      title: { text: '콘텐츠 조회수 (회)' },
+      title: { text: '월간 누적 조회수 합산 (회)' },
       labels: { formatter: (value) => value.toLocaleString() }
     },
     tooltip: {
@@ -747,18 +709,15 @@ const MarketingDashboard = () => {
   }
 
   const snsChartSeries = [
-    { name: '인스타그램 조회수', data: chartInstaViews },
-    { name: '틱톡 조회수', data: chartTiktokViews }
+    { name: '인스타그램 총 조회수', data: chartInstaViews },
+    { name: '틱톡 총 조회수', data: chartTiktokViews }
   ]
 
   // Dynamic Rowspan Helper for month cell merge
   const renderMonthCell = (record, index) => {
-    // Count how many records have this exact month sequentially from this index
     const currentMonth = record.month
-    
-    // Check if this is the first occurrence of this month
     if (index > 0 && snsRecords[index - 1].month === currentMonth) {
-      return null // Span already started, hide this cell
+      return null
     }
 
     let rowspanCount = 0
@@ -779,6 +738,18 @@ const MarketingDashboard = () => {
 
   return (
     <>
+      {/* 📅 대시보드 메타 집계 기간 가이드 명시 (디테일 강화) */}
+      <div className="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border flex-wrap gap-2">
+        <div className="d-flex align-items-center">
+          <span className="fs-5 me-2">📅</span>
+          <span className="fw-bold text-dark fs-6">통합 분석 집계 기간: </span>
+          <CBadge color="primary" className="ms-2 fs-7 px-3 py-2" style={{ fontSize: '12px' }}>{get집계기간()}</CBadge>
+        </div>
+        <div className="text-muted small">
+          총 <strong>{snsRecords.length}개</strong> 콘텐츠 통합 기여 분석 기준 (데이터 업로드 시 자동 갱신)
+        </div>
+      </div>
+
       {/* 1. Global Core KPI Scorecards */}
       <CRow className="mb-4" xs={{ gutter: 4 }}>
         <CCol sm={6} xl={3}>
@@ -813,7 +784,7 @@ const MarketingDashboard = () => {
             <CCardBody className="pb-4 px-4 pt-4">
               <div className="small text-white-50 fw-semibold text-uppercase">인스타그램 광고 지출액</div>
               <div className="fs-2 fw-bold mt-2">₩{snsMetrics.totalSpent.toLocaleString()}</div>
-              <div className="small text-white-50 mt-3">타겟 성과형 캠페인 집행 광고비</div>
+              <div className="small text-white-50 mt-3">4월 타겟 성과형 캠페인 광고비 기준</div>
             </CCardBody>
           </CCard>
         </CCol>
@@ -893,8 +864,8 @@ const MarketingDashboard = () => {
                       <div className="p-3 bg-light rounded border">
                         <div className="d-flex justify-content-between align-items-center flex-wrap mb-2">
                           <div>
-                            <h6 className="fw-bold text-dark mb-1">📈 인스타그램 vs 틱톡 누적 조회수 비교 트렌드</h6>
-                            <span className="small text-muted">양사 소셜 채널의 게시물별 유입 성과를 실시간으로 비교 집계합니다.</span>
+                            <h6 className="fw-bold text-dark mb-1">📈 인스타그램 vs 틱톡 월간 누적 조회수 합산 트렌드 (월별 집계)</h6>
+                            <span className="small text-muted">매일 기록하지 않고 월간 몰아서 분석하는 실무에 맞춘 채널별 총합 추이 차트입니다.</span>
                           </div>
                           <CButton color="outline-primary" size="sm" className="fw-bold shadow-sm" onClick={handleExportToExcel}>
                             📥 엑셀로 내보내기 (서식 완벽 호환)
@@ -906,101 +877,6 @@ const MarketingDashboard = () => {
                           type="line"
                           height={240}
                         />
-                      </div>
-                    </CCol>
-
-                    {/* SNS ADD FORM CARD */}
-                    <CCol lg={12} className="mb-4">
-                      <div className="p-4 rounded border-2 border-dashed border-primary bg-light">
-                        <h6 className="fw-bold text-dark mb-3">✍️ 소셜 계정 성과 레코드 추가 주입</h6>
-                        <CForm className="row g-2">
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">작성 월</label>
-                            <CFormSelect size="sm" value={snsMonth} onChange={(e) => setSnsMonth(e.target.value)}>
-                              <option value="4월">4월</option>
-                              <option value="5월">5월</option>
-                            </CFormSelect>
-                          </CCol>
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">게시일</label>
-                            <CFormInput size="sm" value={snsDate} onChange={(e) => setSnsDate(e.target.value)} placeholder="05월 18일" />
-                          </CCol>
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">유형</label>
-                            <CFormSelect size="sm" value={snsType} onChange={(e) => setSnsType(e.target.value)}>
-                              <option value="릴스">릴스</option>
-                              <option value="게시글">게시글</option>
-                            </CFormSelect>
-                          </CCol>
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">형식</label>
-                            <CFormSelect size="sm" value={snsFormat} onChange={(e) => setSnsFormat(e.target.value)}>
-                              <option value="영상">영상</option>
-                              <option value="카드뉴스">카드뉴스</option>
-                            </CFormSelect>
-                          </CCol>
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">주제</label>
-                            <CFormInput size="sm" value={snsTopic} onChange={(e) => setSnsTopic(e.target.value)} placeholder="유머 / 정보 등" />
-                          </CCol>
-                          <CCol md={2}>
-                            <label className="small fw-semibold text-muted mb-1">광고 여부</label>
-                            <CFormInput size="sm" value={snsAds} onChange={(e) => setSnsAds(e.target.value)} placeholder="O(타깃) / x" />
-                          </CCol>
-
-                          {/* 인스타그램 간편 입력 */}
-                          <CCol md={6} className="mt-3">
-                            <div className="p-3 bg-white rounded border">
-                              <span className="small fw-bold text-danger mb-2 d-block">인스타그램 주요 지표</span>
-                              <div className="row g-2">
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">조회수</label>
-                                  <CFormInput type="number" size="sm" value={instaViews} onChange={(e) => setInstaViews(e.target.value)} />
-                                </div>
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">도달</label>
-                                  <CFormInput type="number" size="sm" value={instaReach} onChange={(e) => setInstaReach(e.target.value)} />
-                                </div>
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">좋아요</label>
-                                  <CFormInput type="number" size="sm" value={instaLikes} onChange={(e) => setInstaLikes(e.target.value)} />
-                                </div>
-                                <div className="col-6">
-                                  <label className="small text-muted mb-1">댓글</label>
-                                  <CFormInput type="number" size="sm" value={instaComments} onChange={(e) => setInstaComments(e.target.value)} />
-                                </div>
-                                <div className="col-6">
-                                  <label className="small text-muted mb-1">광고비(원)</label>
-                                  <CFormInput type="number" size="sm" value={instaSpent} onChange={(e) => setInstaSpent(e.target.value)} />
-                                </div>
-                              </div>
-                            </div>
-                          </CCol>
-
-                          {/* 틱톡 간편 입력 */}
-                          <CCol md={6} className="mt-3">
-                            <div className="p-3 bg-white rounded border">
-                              <span className="small fw-bold text-dark mb-2 d-block">틱톡 주요 지표</span>
-                              <div className="row g-2">
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">도달</label>
-                                  <CFormInput type="number" size="sm" value={tiktokReach} onChange={(e) => setTiktokReach(e.target.value)} />
-                                </div>
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">조회수</label>
-                                  <CFormInput type="number" size="sm" value={tiktokViews} onChange={(e) => setTiktokViews(e.target.value)} />
-                                </div>
-                                <div className="col-4">
-                                  <label className="small text-muted mb-1">좋아요</label>
-                                  <CFormInput type="number" size="sm" value={tiktokLikes} onChange={(e) => setTiktokLikes(e.target.value)} />
-                                </div>
-                              </div>
-                            </div>
-                          </CCol>
-                        </CForm>
-                        <CButton color="primary" size="sm" className="w-100 fw-bold mt-3 text-white" onClick={handleAddSnsRecord}>
-                          새 소셜 성과 행 주입하기
-                        </CButton>
                       </div>
                     </CCol>
                   </CRow>
@@ -1085,14 +961,14 @@ const MarketingDashboard = () => {
                               {/* Instagram details */}
                               <CTableDataCell className="fw-bold">{item.insta.views.toLocaleString()}</CTableDataCell>
                               <CTableDataCell className="text-muted">{item.insta.reach.toLocaleString()}</CTableDataCell>
-                              <CTableDataCell className="text-danger-custom">{item.insta.likes.toLocaleString()}</CTableDataCell>
+                              <CTableDataCell className="text-danger">{item.insta.likes.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.comments.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.saves.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.shares.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.profile.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.site.toLocaleString()}</CTableDataCell>
                               <CTableDataCell>{item.insta.follow.toLocaleString()}</CTableDataCell>
-                              <CTableDataCell className="text-primary-custom">
+                              <CTableDataCell className="text-primary fw-bold">
                                 {item.insta.spent > 0 ? `₩${item.insta.spent.toLocaleString()}` : '-'}
                               </CTableDataCell>
                               <CTableDataCell>
@@ -1155,7 +1031,6 @@ const MarketingDashboard = () => {
 
                 {/* TAB 1: UTM Campaign Tracker */}
                 <CTabPane visible={activeKey === 'utm'}>
-                  {/* Keep previous high fidelity UTM content intact */}
                   <h6 className="fw-bold text-dark mb-3">🔗 UTM 캠페인 생성기 및 성과 분석</h6>
                   <CRow>
                     <CCol lg={12} className="mb-3">
