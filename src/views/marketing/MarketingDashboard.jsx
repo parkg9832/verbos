@@ -31,7 +31,33 @@ const MarketingDashboard = () => {
   const [activeKey, setActiveKey] = useState('original_sns')
 
   // =========================================================
-  // 1. 사용자 오리지널 SNS계정 성과 분석표 실제 시드 데이터 세팅
+  // 1. 전달(Previous Month) 1일 ~ 말일 자동 계산 헬퍼
+  // =========================================================
+  const getPreviousMonthRange = () => {
+    const now = new Date()
+    // 현재 2026-06-01 기준 -> 전달은 5월 1일 ~ 5월 31일이 됨
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const prevMonthLast = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    const formatDate = (date) => {
+      const yyyy = date.getFullYear()
+      const mm = String(date.getMonth() + 1).padStart(2, '0')
+      const dd = String(date.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    }
+
+    return {
+      start: formatDate(prevMonth),
+      end: formatDate(prevMonthLast)
+    }
+  }
+
+  const defaultRange = getPreviousMonthRange()
+  const [startDate, setStartDate] = useState(defaultRange.start)
+  const [endDate, setEndDate] = useState(defaultRange.end)
+
+  // =========================================================
+  // 2. 사용자 오리지널 SNS계정 성과 분석표 실제 시드 데이터 세팅
   // =========================================================
   const defaultSnsRecords = [
     {
@@ -343,7 +369,7 @@ const MarketingDashboard = () => {
   const [snsRecords, setSnsRecords] = useState(defaultSnsRecords)
 
   // ==========================================
-  // 2. 다른 샌드박스 템플릿용 기존 States
+  // 3. 다른 샌드박스 템플릿용 기존 States
   // ==========================================
   const defaultUtmRecords = [
     { id: 1, name: '여름 시즌 빅세일 대축제', source: 'facebook', medium: 'cpc', url: 'https://amiko.com/shop', utmUrl: 'https://amiko.com/shop?utm_source=facebook&utm_medium=cpc&utm_campaign=summer_sale', spent: 3500, clicks: 12500, conversions: 620, revenue: 18600 },
@@ -574,33 +600,58 @@ const MarketingDashboard = () => {
   }
 
   // ==========================================
-  // 5. Dynamic Calculations & Meta Period Tags
+  // 5. Date Parsing and Filtering Core Engine
   // ==========================================
+  
+  // Converts '04월 12일' and '4월' to a standard 'YYYY-MM-DD' for solid comparison
+  const parseSnsDateToIso = (monthStr, dateStr) => {
+    if (!monthStr || !dateStr) return '2026-01-01'
+    try {
+      const m = parseInt(monthStr.replace(/[^0-9]/g, '')) || 1
+      const parts = dateStr.trim().split(/\s+/)
+      const dayPart = parts[parts.length - 1]
+      const d = parseInt(dayPart.replace(/[^0-9]/g, '')) || 1
 
-  // Dynamic analysis period calculations
-  const get집계기간 = () => {
-    if (snsRecords.length === 0) return '등록된 데이터 없음'
-    const sorted = [...snsRecords].sort((a, b) => {
-      const dayA = parseInt(a.date.replace(/[^0-9]/g, '')) || 0
-      const dayB = parseInt(b.date.replace(/[^0-9]/g, '')) || 0
-      return dayA - dayB
-    })
-    const firstDate = sorted[0].date
-    const lastDate = sorted[sorted.length - 1].date
-    const months = Array.from(new Set(snsRecords.map(r => r.month))).join(', ')
-    return `2026. ${firstDate} ~ ${lastDate} (${months} 기여 성과 집계)`
+      const year = 2026 // Standard static year for demo sync
+      const mm = String(m).padStart(2, '0')
+      const dd = String(d).padStart(2, '0')
+      return `${year}-${mm}-${dd}`
+    } catch (e) {
+      return '2026-01-01'
+    }
   }
 
-  // Scorecards logic: Instagram + TikTok summaries
+  // Dynamic filter binder
+  const filteredSnsRecords = snsRecords.filter(item => {
+    const itemIso = parseSnsDateToIso(item.month, item.date)
+    return itemIso >= startDate && itemIso <= endDate
+  })
+
+  // Format YYYY-MM-DD back to readable Korean dates for UI headers
+  const get집계기간 = () => {
+    const formatIso = (isoStr) => {
+      if (!isoStr) return ''
+      const parts = isoStr.split('-')
+      return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`
+    }
+    return `${formatIso(startDate)} ~ ${formatIso(endDate)}`
+  }
+
+  const handleResetToPrevMonth = () => {
+    setStartDate(defaultRange.start)
+    setEndDate(defaultRange.end)
+  }
+
+  // Scorecards logic: Instagram + TikTok summaries based on dynamic FILTERED records
   const getCoreMetrics = () => {
-    const totalInstaViews = snsRecords.reduce((acc, c) => acc + c.insta.views, 0)
-    const totalTiktokViews = snsRecords.reduce((acc, c) => acc + c.tiktok.views, 0)
-    const totalReach = snsRecords.reduce((acc, c) => acc + (c.insta.reach + c.tiktok.reach), 0)
-    const totalSpent = snsRecords.reduce((acc, c) => acc + c.insta.spent, 0)
-    const totalLikes = snsRecords.reduce((acc, c) => acc + (c.insta.likes + c.tiktok.likes), 0)
+    const totalInstaViews = filteredSnsRecords.reduce((acc, c) => acc + c.insta.views, 0)
+    const totalTiktokViews = filteredSnsRecords.reduce((acc, c) => acc + c.tiktok.views, 0)
+    const totalReach = filteredSnsRecords.reduce((acc, c) => acc + (c.insta.reach + c.tiktok.reach), 0)
+    const totalSpent = filteredSnsRecords.reduce((acc, c) => acc + c.insta.spent, 0)
+    const totalLikes = filteredSnsRecords.reduce((acc, c) => acc + (c.insta.likes + c.tiktok.likes), 0)
     
     // Overall engagement rate ER (Likes + Comments + Saves / Views)
-    const totalEngagement = snsRecords.reduce((acc, c) => {
+    const totalEngagement = filteredSnsRecords.reduce((acc, c) => {
       const instaEng = c.insta.likes + c.insta.comments + c.insta.saves + c.insta.shares
       const tiktokEng = c.tiktok.likes + c.tiktok.comments + c.tiktok.saves + c.tiktok.shares
       return acc + (instaEng + tiktokEng)
@@ -619,11 +670,19 @@ const MarketingDashboard = () => {
 
   const snsMetrics = getCoreMetrics()
 
-  // Real-time calculated AI Insights based on user original sheet
+  // Real-time calculated AI Insights based on user original sheet and FILTERED records
   const renderOriginalSnsAiInsights = () => {
+    if (filteredSnsRecords.length === 0) {
+      return (
+        <div className="p-3 rounded text-center small text-white-50" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          선택하신 기간 내에 분석할 소셜 데이터가 존재하지 않습니다. 날짜 범위를 조정해 주세요.
+        </div>
+      )
+    }
+
     let topContent = { date: '-', views: 0, platform: '-' }
 
-    snsRecords.forEach(item => {
+    filteredSnsRecords.forEach(item => {
       if (item.insta.views > topContent.views) {
         topContent = { date: item.date, views: item.insta.views, platform: '인스타그램 릴스', topic: item.topic }
       }
@@ -637,19 +696,13 @@ const MarketingDashboard = () => {
         <div className="p-3 rounded mb-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div className="fw-semibold text-warning small mb-1">🔥 최고 메가 히트 콘텐츠 감지</div>
           <p className="small text-white-50 m-0 leading-relaxed">
-            분석 결과, <strong>[{topContent.date}]</strong>에 업로드된 <strong>{topContent.platform} ({topContent.topic})</strong> 콘텐츠가 조회수 <strong>{topContent.views.toLocaleString()}회</strong>를 돌파하며 최고 실적을 냈습니다.
+            해당 설정 기간 중, <strong>[{topContent.date}]</strong>에 업로드된 <strong>{topContent.platform} ({topContent.topic})</strong> 콘텐츠가 조회수 <strong>{topContent.views.toLocaleString()}회</strong>를 돌파하며 최고 실적을 냈습니다.
           </p>
         </div>
         <div className="p-3 rounded mb-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div className="fw-semibold text-success small mb-1">📊 채널 점유율 및 성비 요약</div>
           <p className="small text-white-50 m-0 leading-relaxed">
-            인스타그램 릴스가 전체 누적 조회수의 약 60%를 주도하고 있습니다. 주요 유저층은 <strong>여성(평균 88% 이상)</strong>이며 <strong>25-34 연령대</strong>가 최대 핵심 기여 오디언스입니다.
-          </p>
-        </div>
-        <div className="p-3 rounded" style={{ background: 'rgba(255,255,255,0.08)' }}>
-          <div className="fw-semibold text-info small mb-1">📢 실무 권장 조치</div>
-          <p className="small text-white-50 m-0 leading-relaxed">
-            주제 분석 결과 <strong>[유머]</strong> 코드가 가장 높은 조회수와 바이럴 공유 지표를 기록하고 있습니다. 5월 하반기부터 릴스 숏폼 예산 15% 추가 투여를 제안합니다.
+            해당 기간 유저층 분석 결과, 인스타의 주요 유저층은 <strong>여성(평균 88% 이상)</strong>이며 <strong>25-34 연령대</strong>가 최대 핵심 기여 오디언스입니다.
           </p>
         </div>
       </>
@@ -657,12 +710,12 @@ const MarketingDashboard = () => {
   }
 
   // =========================================================
-  // 6. 월별 총합 조회수 롤업(Roll-up) 및 ApexCharts 연동 로직
+  // 6. 월별 총합 조회수 롤업(Roll-up) 및 ApexCharts 연동 로직 (FILTERED)
   // =========================================================
   const getMonthlyRollupData = () => {
     const rollupMap = {}
-    snsRecords.forEach(item => {
-      const m = item.month // '4월', '5월' ...
+    filteredSnsRecords.forEach(item => {
+      const m = item.month
       if (!rollupMap[m]) {
         rollupMap[m] = { month: m, instaViews: 0, tiktokViews: 0 }
       }
@@ -670,7 +723,6 @@ const MarketingDashboard = () => {
       rollupMap[m].tiktokViews += item.tiktok.views
     })
     
-    // Sort keys based on numeric month sequence
     const sortedKeys = Object.keys(rollupMap).sort((a, b) => {
       const numA = parseInt(a) || 0
       const numB = parseInt(b) || 0
@@ -694,13 +746,13 @@ const MarketingDashboard = () => {
       width: [3, 3],
       curve: 'smooth'
     },
-    colors: ['#e1306c', '#000000'], // Instagram pink vs TikTok black
+    colors: ['#e1306c', '#000000'],
     labels: chartMonths,
     xaxis: {
       type: 'category'
     },
     yaxis: {
-      title: { text: '월간 누적 조회수 합산 (회)' },
+      title: { text: '설정 기간 월간 누적 조회수 ($)' },
       labels: { formatter: (value) => value.toLocaleString() }
     },
     tooltip: {
@@ -713,16 +765,16 @@ const MarketingDashboard = () => {
     { name: '틱톡 총 조회수', data: chartTiktokViews }
   ]
 
-  // Dynamic Rowspan Helper for month cell merge
+  // Dynamic Rowspan Helper for month cell merge (based on FILTERED records)
   const renderMonthCell = (record, index) => {
     const currentMonth = record.month
-    if (index > 0 && snsRecords[index - 1].month === currentMonth) {
+    if (index > 0 && filteredSnsRecords[index - 1].month === currentMonth) {
       return null
     }
 
     let rowspanCount = 0
-    for (let i = index; i < snsRecords.length; i++) {
-      if (snsRecords[i].month === currentMonth) {
+    for (let i = index; i < filteredSnsRecords.length; i++) {
+      if (filteredSnsRecords[i].month === currentMonth) {
         rowspanCount++
       } else {
         break
@@ -738,15 +790,48 @@ const MarketingDashboard = () => {
 
   return (
     <>
-      {/* 📅 대시보드 메타 집계 기간 가이드 명시 (디테일 강화) */}
-      <div className="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border flex-wrap gap-2">
-        <div className="d-flex align-items-center">
+      {/* 📅 대시보드 메인 날짜 필터 영역 (Meta Business Suite 세련된 이식) */}
+      <div className="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border flex-wrap gap-3">
+        <div className="d-flex align-items-center flex-wrap gap-2">
           <span className="fs-5 me-2">📅</span>
-          <span className="fw-bold text-dark fs-6">통합 분석 집계 기간: </span>
-          <CBadge color="primary" className="ms-2 fs-7 px-3 py-2" style={{ fontSize: '12px' }}>{get집계기간()}</CBadge>
+          <span className="fw-bold text-dark fs-6 me-3">분석 기간 설정: </span>
+          
+          <div className="d-flex align-items-center gap-1">
+            <CFormInput
+              type="date"
+              size="sm"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{ maxWidth: '145px' }}
+            />
+            <span className="mx-1 text-muted fw-bold">~</span>
+            <CFormInput
+              type="date"
+              size="sm"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ maxWidth: '145px' }}
+            />
+          </div>
+
+          <CButton
+            color="outline-secondary"
+            size="sm"
+            className="fw-bold ms-2 px-3"
+            style={{ fontSize: '11px' }}
+            onClick={handleResetToPrevMonth}
+          >
+            기본값 복원 (전달 1일~말일)
+          </CButton>
         </div>
-        <div className="text-muted small">
-          총 <strong>{snsRecords.length}개</strong> 콘텐츠 통합 기여 분석 기준 (데이터 업로드 시 자동 갱신)
+        
+        <div className="d-flex align-items-center gap-2">
+          <CBadge color="primary" className="px-3 py-2" style={{ fontSize: '11px' }}>
+            {get집계기간()}
+          </CBadge>
+          <div className="text-muted small">
+            지정 범위 내 콘텐츠: <strong>{filteredSnsRecords.length}개</strong>
+          </div>
         </div>
       </div>
 
@@ -755,36 +840,36 @@ const MarketingDashboard = () => {
         <CCol sm={6} xl={3}>
           <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #321fdb, #1f1498)' }}>
             <CCardBody className="pb-4 px-4 pt-4">
-              <div className="small text-white-50 fw-semibold text-uppercase">통합 SNS 총 조회수</div>
+              <div className="small text-white-50 fw-semibold text-uppercase">기간 통합 총 조회수</div>
               <div className="fs-2 fw-bold mt-2">{snsMetrics.totalViews.toLocaleString()} 회</div>
-              <div className="small text-white-50 mt-3">인스타그램 & 틱톡 합산 누적 도달</div>
+              <div className="small text-white-50 mt-3">지정 날짜 범위 내 누적 모수</div>
             </CCardBody>
           </CCard>
         </CCol>
         <CCol sm={6} xl={3}>
           <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #e1306c, #a81c4e)' }}>
             <CCardBody className="pb-4 px-4 pt-4">
-              <div className="small text-white-50 fw-semibold text-uppercase">누적 총 인게이지먼트</div>
+              <div className="small text-white-50 fw-semibold text-uppercase">기간 누적 총 인게이지먼트</div>
               <div className="fs-2 fw-bold mt-2">{snsMetrics.totalLikes.toLocaleString()} 건</div>
-              <div className="small text-white-50 mt-3">양사 소셜 채널 총 소통 반응 액션</div>
+              <div className="small text-white-50 mt-3">범위 내 소셜 인터랙션 반응수</div>
             </CCardBody>
           </CCard>
         </CCol>
         <CCol sm={6} xl={3}>
           <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #f9b115, #f6960b)' }}>
             <CCardBody className="pb-4 px-4 pt-4">
-              <div className="small text-white-50 fw-semibold text-uppercase">평균 참여율 (ER%)</div>
+              <div className="small text-white-50 fw-semibold text-uppercase">기간 평균 참여율 (ER%)</div>
               <div className="fs-2 fw-bold mt-2">{snsMetrics.avgEr.toFixed(2)}%</div>
-              <div className="small text-white-50 mt-3">조회수 대비 인터랙션 효율 비율</div>
+              <div className="small text-white-50 mt-3">설정 범위 내 참여 효율성 통계</div>
             </CCardBody>
           </CCard>
         </CCol>
         <CCol sm={6} xl={3}>
           <CCard className="border-0 shadow-sm text-white" style={{ background: 'linear-gradient(45deg, #35495e, #2c3e50)' }}>
             <CCardBody className="pb-4 px-4 pt-4">
-              <div className="small text-white-50 fw-semibold text-uppercase">인스타그램 광고 지출액</div>
+              <div className="small text-white-50 fw-semibold text-uppercase">기간 광고 지출액</div>
               <div className="fs-2 fw-bold mt-2">₩{snsMetrics.totalSpent.toLocaleString()}</div>
-              <div className="small text-white-50 mt-3">4월 타겟 성과형 캠페인 광고비 기준</div>
+              <div className="small text-white-50 mt-3">설정 범위 내 인스타 타겟 광고비</div>
             </CCardBody>
           </CCard>
         </CCol>
@@ -864,19 +949,25 @@ const MarketingDashboard = () => {
                       <div className="p-3 bg-light rounded border">
                         <div className="d-flex justify-content-between align-items-center flex-wrap mb-2">
                           <div>
-                            <h6 className="fw-bold text-dark mb-1">📈 인스타그램 vs 틱톡 월간 누적 조회수 합산 트렌드 (월별 집계)</h6>
-                            <span className="small text-muted">매일 기록하지 않고 월간 몰아서 분석하는 실무에 맞춘 채널별 총합 추이 차트입니다.</span>
+                            <h6 className="fw-bold text-dark mb-1">📈 인스타그램 vs 틱톡 월간 누적 조회수 합산 트렌드 (설정 범위 집계)</h6>
+                            <span className="small text-muted">선택하신 날짜 범위 내에서 채널별 총합 조회수 추이를 자동으로 시각화합니다.</span>
                           </div>
                           <CButton color="outline-primary" size="sm" className="fw-bold shadow-sm" onClick={handleExportToExcel}>
                             📥 엑셀로 내보내기 (서식 완벽 호환)
                           </CButton>
                         </div>
-                        <Chart
-                          options={snsChartOptions}
-                          series={snsChartSeries}
-                          type="line"
-                          height={240}
-                        />
+                        {filteredSnsRecords.length > 0 ? (
+                          <Chart
+                            options={snsChartOptions}
+                            series={snsChartSeries}
+                            type="line"
+                            height={240}
+                          />
+                        ) : (
+                          <div className="py-5 text-center text-muted small bg-white rounded border">
+                            선택하신 기간 내에 렌더링할 조회수 데이터가 존재하지 않습니다. 시작/종료일을 넓혀주세요.
+                          </div>
+                        )}
                       </div>
                     </CCol>
                   </CRow>
@@ -923,7 +1014,7 @@ const MarketingDashboard = () => {
                         </CTableRow>
                       </CTableHead>
                       <CTableBody>
-                        {snsRecords.map((item, idx) => {
+                        {filteredSnsRecords.map((item, idx) => {
                           // Find top age range in Instagram for representative print
                           let topInstaAge = '-';
                           let topInstaAgeVal = 0;
@@ -1024,6 +1115,13 @@ const MarketingDashboard = () => {
                             </CTableRow>
                           )
                         })}
+                        {filteredSnsRecords.length === 0 && (
+                          <CTableRow>
+                            <CTableDataCell colSpan={31} className="py-5 text-muted small bg-white text-center">
+                              선택하신 기간({startDate} ~ {endDate}) 내에 분석 대상 소셜 레코드가 없습니다. 달력을 조정하거나 다른 엑셀을 추가 연동해 주세요.
+                            </CTableDataCell>
+                          </CTableRow>
+                        )}
                       </CTableBody>
                     </CTable>
                   </div>
