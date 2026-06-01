@@ -1,0 +1,1 @@
+var e=`/verbos/assets/1-Bxx5tbqp.jpg`,t=`/verbos/assets/4-TDOHctEN.jpg`;export{e as n,t};

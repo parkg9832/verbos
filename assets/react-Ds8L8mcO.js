@@ -1,0 +1,1 @@
+var e=`/verbos/assets/react-DmxSGVXA.jpg`;export{e as t};
