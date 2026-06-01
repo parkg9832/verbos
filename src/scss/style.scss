@@ -65,3 +65,21 @@ body {
     --cui-footer-bg: var(--cui-body-bg);
   }
 }
+
+// Force the layout container to stretch completely on desktop monitors to utilize all wide screen space
+.body,
+.wrapper,
+.container-fluid,
+.container-lg,
+.container {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+// Adjust padding inside the main body container for a spacious fluid feel
+.body {
+  padding: 1.5rem !important;
+}
+
