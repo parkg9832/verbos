@@ -379,6 +379,59 @@ const MarketingDashboard = () => {
   const [funnelRecords, setFunnelRecords] = useState(defaultFunnelRecords)
 
   // ==========================================
+  // Interactive UTM Builder States & Handlers
+  // ==========================================
+  const [utmUrlInput, setUtmUrlInput] = useState('https://amiko.com/shop')
+  const [utmSource, setUtmSource] = useState('naver')
+  const [utmMedium, setUtmMedium] = useState('blog')
+  const [utmCampaign, setUtmCampaign] = useState('brand_viral')
+  const [utmContent, setUtmContent] = useState('')
+  const [generatedUtm, setGeneratedUtm] = useState('')
+  const [copySuccess, setCopySuccess] = useState(false)
+  const [newCampaignName, setNewCampaignName] = useState('브랜드 블로그 홍보 캠페인')
+
+  // Real-time UTM generator trigger
+  useEffect(() => {
+    let url = utmUrlInput
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url
+    }
+    const params = new URLSearchParams()
+    if (utmSource) params.append('utm_source', utmSource)
+    if (utmMedium) params.append('utm_medium', utmMedium)
+    if (utmCampaign) params.append('utm_campaign', utmCampaign)
+    if (utmContent) params.append('utm_content', utmContent)
+
+    const queryString = params.toString()
+    setGeneratedUtm(queryString ? `${url}?${queryString}` : url)
+  }, [utmUrlInput, utmSource, utmMedium, utmCampaign, utmContent])
+
+  // Copy UTM to Clipboard
+  const handleCopyUtm = () => {
+    navigator.clipboard.writeText(generatedUtm)
+    setCopySuccess(true)
+    setTimeout(() => setCopySuccess(false), 2000)
+  }
+
+  // Add generated UTM campaign to active tracking table
+  const handleAddUtmCampaign = () => {
+    const newRecord = {
+      id: Date.now(),
+      name: newCampaignName || '신규 UTM 캠페인',
+      source: utmSource || 'unknown',
+      medium: utmMedium || 'unknown',
+      url: utmUrlInput,
+      utmUrl: generatedUtm,
+      spent: 500,
+      clicks: 1200,
+      conversions: 45,
+      revenue: 1650
+    }
+    setUtmRecords([newRecord, ...utmRecords])
+    alert('새 UTM 캠페인이 하단 트래커 표에 등록되었습니다!')
+  }
+
+  // ==========================================
   // 3. SNS계정 성과 분석 추가 / 편집 CRUD 기능
   // ==========================================
   const [snsMonth, setSnsMonth] = useState('5월')
