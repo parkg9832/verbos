@@ -1,1 +1,0 @@
-import{E as e,S as t,d as n,l as r,u as i}from"./index-DZ-JwiMi.js";var a=e(t()),o=e(i()),s=(0,a.forwardRef)((e,t)=>{var{children:i,className:o}=e,s=n(e,[`children`,`className`]);return a.createElement(`div`,Object.assign({className:r(`card-group`,o)},s,{ref:t}),i)});s.propTypes={children:o.default.node,className:o.default.string},s.displayName=`CCardGroup`;export{s as t};
