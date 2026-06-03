@@ -1,8 +1,0 @@
-import{a as e,f as t,p as n}from"./components-q1WMmKP1.js";import{S as r,b as i,t as a,y as o}from"./index-D8cLBCww.js";r();var s=a(),c=()=>{let r=o(),a=i(e=>e.sidebarShow);return(0,s.jsxs)(`div`,{children:[(0,s.jsx)(`style`,{children:`
-        .container-fluid,
-        .container-lg,
-        .container {
-          max-width: 100% !important;
-          width: 100% !important;
-        }
-      `}),(0,s.jsx)(e,{}),(0,s.jsxs)(`div`,{className:`wrapper d-flex flex-column min-vh-100`,children:[!a&&(0,s.jsx)(`button`,{onClick:()=>r({type:`set`,sidebarShow:!0}),style:{position:`fixed`,top:`14px`,left:`14px`,zIndex:1030,width:`32px`,height:`32px`,borderRadius:`8px`,border:`1px solid #d1e8e3`,background:`#f0faf8`,color:`#0c7b6e`,cursor:`pointer`,display:`flex`,alignItems:`center`,justifyContent:`center`,boxShadow:`0 2px 8px rgba(12,123,110,0.15)`,transition:`all 0.15s`},onMouseEnter:e=>{e.currentTarget.style.background=`#0c7b6e`,e.currentTarget.style.color=`#ffffff`},onMouseLeave:e=>{e.currentTarget.style.background=`#f0faf8`,e.currentTarget.style.color=`#0c7b6e`},title:`사이드바 열기`,children:(0,s.jsx)(`svg`,{width:`16`,height:`16`,viewBox:`0 0 16 16`,fill:`currentColor`,children:(0,s.jsx)(`path`,{fillRule:`evenodd`,d:`M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z`})})}),(0,s.jsx)(`div`,{className:`body flex-grow-1`,children:(0,s.jsx)(n,{})}),(0,s.jsx)(t,{})]})]})};export{c as default};
