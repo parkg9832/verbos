@@ -9,6 +9,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <script>
+      if (window.opener && window.location.hash && window.location.hash.includes('access_token=')) {
+        const match = window.location.hash.match(/access_token=([^&]+)/);
+        if (match) {
+          window.opener.postMessage({ type: 'OAUTH_SUCCESS_REAL', token: match[1], platform: 'instagram' }, '*');
+          window.close();
+        }
+      }
+    </script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="CoreUI for React - Open Source Bootstrap Admin Template">
@@ -17,7 +26,7 @@
     <title>CoreUI Free React.js Admin Template</title>
     <link rel="manifest" href="/verbos/manifest.json">
     <link rel="shortcut icon" href="/verbos/favicon.ico">
-    <script type="module" crossorigin src="/verbos/assets/index-CMawcJN_.js"></script>
+    <script type="module" crossorigin src="/verbos/assets/index-C-I3Ud7N.js"></script>
     <link rel="stylesheet" crossorigin href="/verbos/assets/index-DIww7bEK.css">
   </head>
   <body>
