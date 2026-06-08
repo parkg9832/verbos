@@ -1,1 +1,0 @@
-import{E as e,S as t,d as n,l as r,u as i}from"./index-C-I3Ud7N.js";var a=e(t()),o=e(i()),s=(0,a.forwardRef)((e,t)=>{var{children:i,className:o}=e,s=n(e,[`children`,`className`]);return a.createElement(`div`,Object.assign({className:r(`card-body`,o)},s,{ref:t}),i)});s.propTypes={children:o.default.node,className:o.default.string},s.displayName=`CCardBody`;export{s as t};
